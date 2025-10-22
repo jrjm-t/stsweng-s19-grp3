@@ -31,3 +31,5 @@ VITE_SUPABASE_ANON_KEY= (ADD YOURS)
         Admin Account: admin
         Not Admin Account: not-admin
 
+
+TEST
