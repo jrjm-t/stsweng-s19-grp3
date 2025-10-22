@@ -1,0 +1,33 @@
+Links
+http://localhost:5173/vrnqxh6p2dj722u7/login
+http://localhost:5173/d5mf7868y97mpwa9/sign-up
+
+
+How to run
+
+1. Create your own Supabase account to create your own database
+2. Connect it via creating a .env and input:
+
+VITE_SUPABASE_URL= (ADD YOURS)
+VITE_SUPABASE_SERVICE_ROLE_KEY= (ADD YOURS)
+VITE_SUPABASE_ANON_KEY= (ADD YOURS)
+
+(You can find them in Project Settings -> Data API and API Keys)
+
+3. Go to Authentication and Add Users
+    Make 1 admin@gabay.org account and 1 not-admin@gabay.org account
+    The password here will be your password when you login
+
+4. Copy the UUID of the Two users in seed.sql in LINE 63 and 64
+
+5. Copy and Paste to the SQL Editor and Run it:
+    Schema.SQL 
+    seed.sql
+
+6. Do npm install and npm run dev to run the web app locally.
+
+7. Go to the login link given above:
+    Usernames will be:
+        Admin Account: admin
+        Not Admin Account: not-admin
+

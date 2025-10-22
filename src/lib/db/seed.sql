@@ -60,8 +60,10 @@ UNION ALL
 SELECT id, 12, '2026-01-15'::timestamp with time zone, gen_random_uuid() FROM items WHERE name = 'First Aid Kit';
 
 -- Insert a test user (you'll need to replace with a real user ID from your auth.users table)
--- INSERT INTO users (id, email, name, is_admin) VALUES 
---   ('test-user-id', 'admin@gabay.com', 'Admin User', true);
+INSERT INTO users (id, email, name, is_admin) VALUES  ('', 'admin@gabay.org', 'admin', true);
+INSERT INTO users (id, email, name, is_admin) VALUES  ('', 'not-admin@gabay.org', 'notAdmin', false);
+
+
 
 -- Insert sample transactions for testing transaction history
 -- Using subqueries to get actual lot_ids from item_stocks and user UUIDs from auth.users
