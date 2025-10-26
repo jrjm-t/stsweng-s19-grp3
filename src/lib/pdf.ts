@@ -206,7 +206,7 @@ export class Document {
    */
   async save() {
     const bytes = await this.doc!.save();
-    const blob = new Blob([bytes], { type: "application/pdf" });
+    const blob = new Blob([Buffer.from(bytes)], { type: "application/pdf" });
     const url = URL.createObjectURL(blob);
     window.open(url, "_blank");
     return url;

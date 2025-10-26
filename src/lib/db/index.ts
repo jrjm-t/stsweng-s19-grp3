@@ -12,8 +12,16 @@ import { createClient } from "@supabase/supabase-js";
 import { Json, Tables } from "./db.rawtypes";
 import { buildSelectQuery } from "./db.querybuilder";
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+// normalize env access: prefer Vite's import.meta.env, fallback to process.env (for Jest/Node)
+const env: Record<string, any> =
+  (typeof import.meta !== "undefined" && (import.meta as any).env) ||
+  (typeof process !== "undefined" && process.env) ||
+  {};
+
+const SUPABASE_URL = env.VITE_SUPABASE_URL || env.SUPABASE_URL || "";
+const SUPABASE_ANON_KEY =
+  env.VITE_SUPABASE_ANON_KEY || env.SUPABASE_ANON_KEY || "";
+
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 /**
