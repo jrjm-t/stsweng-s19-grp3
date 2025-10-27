@@ -13,7 +13,7 @@
   },
   "dependencies": {
     "@pipedream/html_2_pdf": "^0.1.1",
-    "@supabase/supabase-js": "^2.50.3",
+    "@supabase/supabase-js": "^2.76.1",
     "@tailwindcss/vite": "^4.1.8",
     "@vercel/node": "^5.2.2",
     "bcrypt": "^6.0.0",

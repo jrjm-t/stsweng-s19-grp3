@@ -20,14 +20,17 @@ import { SearchProvider } from "./contexts/SearchContext";
 import { ItemSelectionProvider } from "./contexts/ItemSelectionContext";
 import Auth404 from './pages/Auth404';
 
+// Check if we're in development mode (localhost)
+const isDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+
 const router = createBrowserRouter([
   {
     path: "/login",
-    element: <Auth404 />,
+    element: isDev ? <Login /> : <Auth404 />,
   },
   {
     path: "/sign-up",
-    element: <Auth404 />,
+    element: isDev ? <SignUp /> : <Auth404 />,
   },
   {
     path: "/vrnqxh6p2dj722u7/login",

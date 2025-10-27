@@ -14,7 +14,27 @@ import { buildSelectQuery } from "./db.querybuilder";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
-export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// Create a single instance of Supabase client with proper CORS handling for localhost
+let supabaseInstance: ReturnType<typeof createClient> | null = null;
+export const supabase = (() => {
+  if (!supabaseInstance) {
+    supabaseInstance = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      auth: {
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: true,
+        flowType: 'implicit'
+      },
+      global: {
+        headers: {
+          'Access-Control-Allow-Origin': '*'
+        }
+      }
+    });
+  }
+  return supabaseInstance;
+})();
 
 /**
  * Database types.

@@ -1,11 +1,7 @@
-import { createClient, User } from "@supabase/supabase-js";
+import { User } from "@supabase/supabase-js";
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
-
-// Env setup
-const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL!,
-  import.meta.env.VITE_SUPABASE_ANON_KEY!
-);
+import { supabase } from "./index";
+import { Tables } from "./db.rawtypes";
 
 interface IAuth {
   user: User | null;
@@ -60,8 +56,8 @@ export const AuthContextProvider = ({
         .from("users")
         .select("*")
         .eq("id", user.id)
-        .single();
-      setIsAdmin(data?.is_admin);
+        .single<Tables<"users">>();
+      setIsAdmin(!!data?.is_admin);
     }
 
     console.log("[AUTH]: updated user.");
@@ -120,18 +116,19 @@ export const AuthContextProvider = ({
         return false;
       }
 
-      // Just generate a placeholder email because supabase wants an email
-      const email = `${username}@gabay.org`;
+      // Generate the standardized email
+      const email = `${username.toLowerCase()}@gabay.org`;
 
-      // Supabase automatically checks password
+      // First create the auth user
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: {
-            full_name: username,
-            is_admin: is_admin
-          }
+            username: username,
+            is_admin: is_admin || false
+          },
+          emailRedirectTo: window.location.origin
         }
       });
 
@@ -159,40 +156,52 @@ export const AuthContextProvider = ({
   /**
    * Authenticates the user with the supabase backend.
    *
-   * @param email
-   * @param password
-   * @returns
+   * @param username - The username to login with
+   * @param password - The user's password
+   * @returns boolean indicating success or failure
    */
   const login = async (username: string, password: string) => {
-    setLoggingIn(true);
+  setLoggingIn(true);
 
-    try {
-      // Just generate a placeholder email because supabase wants an email
-      const email = `${username}@gabay.org`;
-
-      // Supabase automatically checks password
-      const { error, ...rest } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      // Something went wrong
-      if (error) {
-        setLoggingIn(false);
-        return false;
-      }
-
-      // Update user
-      await updateUser();
-      setLoggingIn(false);
-      return true;
-    } catch (error) {
-      console.error("Login error:", error);
+  try {
+    // Validate inputs
+    if (!username || username.trim().length === 0) {
+      console.error("Username cannot be empty");
       setLoggingIn(false);
       return false;
     }
-  };
 
+    if (!password || password.length < 6) {
+      console.error("Invalid password");
+      setLoggingIn(false);
+      return false;
+    }
+
+    // Generate the email that was used during registration
+    const email = `${username.toLowerCase()}@gabay.org`;
+
+    // Attempt to sign in
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (error) {
+      console.error("Login error:", error.message);
+      setLoggingIn(false);
+      return false;
+    }
+
+    // Update user state
+    await updateUser();
+    setLoggingIn(false);
+    return true;
+  } catch (error) {
+    console.error("Login error:", error);
+    setLoggingIn(false);
+    return false;
+  }
+};
   /**
    * Invalidates the auth token in the browser cookie.
    *
