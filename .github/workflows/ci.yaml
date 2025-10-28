@@ -1,0 +1,46 @@
+name: Build, Lint, and Test
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Lint Code
+        run: npm run lint
+
+      - name: Check Types
+        run: npx tsc --noEmit
+
+      #uncomment pag oks na jest
+      # - name: Run Unit/Integration Tests
+      #   run: npm test
+
+      - name: Build Project
+        run: npm run build
+
+      #uncomment pag oks na cypress
+      # - name: Run Cypress E2E Tests
+      #   uses: cypress-io/github-action@v6
+      #   with:
+      #     build: npm run build
+      #     start: npm run preview
+      #     wait-on: 'http://localhost:4173'
+      #     browser: chrome
