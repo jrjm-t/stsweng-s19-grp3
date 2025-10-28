@@ -68,3 +68,12 @@ create table if not exists public.notifications (
   message text not null,
   created_at timestamptz default now()
 );
+
+-- added enums
+-- 1) create enum type
+CREATE TYPE transaction_type AS ENUM ('DEPOSIT', 'DISTRIBUTE', 'DISPOSE','DELETE');
+
+-- 2) convert existing column to enum
+ALTER TABLE public.transactions
+  ALTER COLUMN type TYPE transaction_type
+  USING type::transaction_type;

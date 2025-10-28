@@ -1,11 +1,6 @@
-import { createClient, User } from "@supabase/supabase-js";
+import { User } from "@supabase/supabase-js";
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
-
-// Env setup
-const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL!,
-  import.meta.env.VITE_SUPABASE_ANON_KEY!
-);
+import { supabase } from "./index";
 
 interface IAuth {
   user: User | null;
@@ -103,7 +98,7 @@ export const AuthContextProvider = ({
         .from("users")
         .select("name")
         .eq("name", username)
-        .single();
+        .maybeSingle();
 
       if (checkError) {
         if (checkError.code !== 'PGRST116') {
