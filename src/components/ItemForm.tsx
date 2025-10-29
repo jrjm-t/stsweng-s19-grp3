@@ -21,6 +21,7 @@ function ItemForm({ mode }: ItemFormProps) {
     expDate: "",
     newItem: "",
     newLotId: "",
+    unitPrice: "",
   });
 
   const [itemOptions, setItemOptions] = useState<
@@ -120,6 +121,7 @@ function ItemForm({ mode }: ItemFormProps) {
       expDate: "",
       newItem: "",
       newLotId: "",
+      unitPrice: "",
     });
     setLotOptions([]);
     setDisableExpDate(false);
@@ -131,8 +133,8 @@ function ItemForm({ mode }: ItemFormProps) {
 
       if (isAdd) {
         await fetchAndSyncItems();
-        if (!form.item || !form.lotId || !form.quantity) {
-          throw new Error("Item name, lot ID, and quantity are required.");
+        if (!form.item || !form.lotId || !form.quantity || !form.unitPrice) {
+          throw new Error("Item name, lot ID, unit price, and quantity are required.");
         }
 
         const isNewItem = !itemOptions.find((opt) => opt.value === form.item);
@@ -150,6 +152,7 @@ function ItemForm({ mode }: ItemFormProps) {
               lotId: form.lotId,
               quantity: Number(form.quantity),
               expiryDate: form.expDate || undefined,
+              // unitPrice: Number(form.unitPrice) || 0, // TODO:
             },
           });
           setToast({ message: "New item and stock added.", type: "success" });
@@ -160,6 +163,7 @@ function ItemForm({ mode }: ItemFormProps) {
             quantity: Number(form.quantity),
             userId: user.id,
             expiryDate: form.expDate || undefined,
+            // unitPrice: Number(form.unitPrice) || 0, // TODO:
           });
           setToast({
             message: "New lot added to existing item.",
@@ -171,6 +175,7 @@ function ItemForm({ mode }: ItemFormProps) {
             userId: user.id,
             quantity: Number(form.quantity),
             type: "DEPOSIT",
+            // unitPrice: Number(form.unitPrice) || 0, // TODO:
           });
           setToast({
             message: "Quantity added to existing lot.",
@@ -373,6 +378,19 @@ function ItemForm({ mode }: ItemFormProps) {
             />
 
             <Input
+              label="Unit Price"
+              id="unitPrice"
+              name="unitPrice"
+              type="number"
+              value={form.unitPrice}
+              onChange={handleChange}
+              size="custom"
+              className="w-full"
+              placeholder="Enter unit price"
+              inputClassName="bg-white"
+            />
+
+            <Input
               label="Expiration Date (Optional)"
               id="expDate"
               name="expDate"
@@ -501,6 +519,19 @@ function ItemForm({ mode }: ItemFormProps) {
           />
 
           <Input
+            label="Unit Price"
+            id="unitPrice"
+            name="unitPrice"
+            type="number"
+            value={form.unitPrice}
+            onChange={handleChange}
+            size="custom"
+            className="w-full"
+            placeholder="Enter unit price"
+            inputClassName="bg-white"
+          />
+
+          <Input
             label="Expiration Date (Optional)"
             id="expDate"
             name="expDate"
@@ -512,6 +543,7 @@ function ItemForm({ mode }: ItemFormProps) {
             inputClassName="bg-white"
             disabled={isDelete || disableExpDate}
           />
+
         </div>
 
         <div className="flex justify-center mt-4">

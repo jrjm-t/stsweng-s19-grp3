@@ -12,6 +12,8 @@ const columns = [
   { key: "name", label: "Item Name" },
   { key: "lotId", label: "Lot ID" },
   { key: "qty", label: "Qty" },
+  { key: "unitPrice", label: "Unit Price" },
+  { key: "totalPrice", label: "Total Price" },
   { key: "expDate", label: "Expiration Date" },
   { key: "lastModified", label: "Last Modified" },
   { key: "action", label: "Action" },

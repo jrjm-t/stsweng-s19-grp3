@@ -1354,6 +1354,18 @@ export const inventoryApi = {
     return { itemsAdded, itemsTaken };
   },
 
+  /*
+  * Get the totals for inventory value and expired items.
+  */
+  async getFinancialSummary() { // TODO: implement backend
+
+    // FIXME: 6 7 🫱🫲
+    let totalInventoryValue = 67; 
+    let totalExpirationValue = 67;
+
+    return { totalInventoryValue, totalExpirationValue };
+  },
+
   /**
    * Get detailed item information for a list of lot IDs.
    * Useful for displaying detailed information when users click on notifications.

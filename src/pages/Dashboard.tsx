@@ -3,6 +3,7 @@ import DashboardCard from "../components/Dashboard/DashboardCard";
 import ReportCard from "../components/Dashboard/ReportCard";
 import { inventoryApi } from "../lib/db/db.api";
 import { useAuth } from "../lib/db/db.auth";
+import FinancialReportCard from "../components/Dashboard/FinancialReportCard";
 
 function Dashboard() {
   const { isAdmin } = useAuth();
@@ -12,6 +13,11 @@ function Dashboard() {
   const [expired, setExpired] = useState(0);
   const [itemsAdded, setItemsAdded] = useState(0);
   const [itemsTaken, setItemsTaken] = useState(0);
+  
+  // FIXME: 
+  const [totalInventoryValue, setTotalInventoryValue] = useState(0);
+  const [totalExpirationValue, setTotalExpirationValue] = useState(0);
+
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
@@ -36,6 +42,12 @@ function Dashboard() {
           await inventoryApi.getMonthlyTransactionSummary();
         setItemsAdded(itemsAdded);
         setItemsTaken(itemsTaken);
+
+        const { totalInventoryValue, totalExpirationValue } =
+          await inventoryApi.getFinancialSummary();
+        setTotalInventoryValue(totalInventoryValue);
+        setTotalExpirationValue(totalExpirationValue);
+
       } catch (error) {
         console.error("Failed to load dashboard data:", error);
       } finally {
@@ -90,6 +102,13 @@ function Dashboard() {
           <ReportCard itemsAdded={itemsAdded} itemsTaken={itemsTaken} />
         </div>
       )}
+
+      {isAdmin && (
+        <div className="w-full max-w-[900px] flex flex-col items-center gap-8">
+          <FinancialReportCard totalInventoryValue={totalInventoryValue} totalExpirationValue={totalExpirationValue} />
+        </div>
+      )}
+
     </div>
   );
 }
