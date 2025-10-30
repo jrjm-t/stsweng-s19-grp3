@@ -85,6 +85,8 @@ function ItemForm({ mode }: ItemFormProps) {
     setLotOptions(lotIds.map((lot: string) => ({ value: lot, label: lot })));
   };
 
+  const [disableUnitPrice, setDisableUnitPrice] = useState(false); //ADD: unit price adding disabled for existing lots
+
   const handleLotChange = (newValue: any) => {
     if (skipRepopulation) return;
 
@@ -105,11 +107,14 @@ function ItemForm({ mode }: ItemFormProps) {
         ...prev,
         expDate: matchedStock.expiry_date?.split("T")[0] || "",
         quantity: isAdd ? "" : matchedStock.item_qty.toString(),
+        unitPrice: matchedStock.unit_price?.toString() || "", //ADD: unit price field
       }));
       setDisableExpDate(true);
+      setDisableUnitPrice(true);
     } else {
-      setForm((prev) => ({ ...prev, expDate: "" }));
+      setForm((prev) => ({ ...prev, expDate: "" , unitPrice: ""})); //ADD: unit price field
       setDisableExpDate(false);
+      setDisableUnitPrice(false);
     }
   };
 
@@ -125,6 +130,7 @@ function ItemForm({ mode }: ItemFormProps) {
     });
     setLotOptions([]);
     setDisableExpDate(false);
+    setDisableUnitPrice(false);
   };
 
   const handleSubmit = async () => {
@@ -152,7 +158,7 @@ function ItemForm({ mode }: ItemFormProps) {
               lotId: form.lotId,
               quantity: Number(form.quantity),
               expiryDate: form.expDate || undefined,
-              // unitPrice: Number(form.unitPrice) || 0, // TODO:
+              unitPrice: Number(form.unitPrice) || 0, // ADD: unit price field
             },
           });
           setToast({ message: "New item and stock added.", type: "success" });
@@ -163,7 +169,7 @@ function ItemForm({ mode }: ItemFormProps) {
             quantity: Number(form.quantity),
             userId: user.id,
             expiryDate: form.expDate || undefined,
-            // unitPrice: Number(form.unitPrice) || 0, // TODO:
+            unitPrice: Number(form.unitPrice) || 0, // ADD: unit price field
           });
           setToast({
             message: "New lot added to existing item.",
@@ -175,7 +181,7 @@ function ItemForm({ mode }: ItemFormProps) {
             userId: user.id,
             quantity: Number(form.quantity),
             type: "DEPOSIT",
-            // unitPrice: Number(form.unitPrice) || 0, // TODO:
+            //unitPrice: Number(form.unitPrice) || 0, // TODO:
           });
           setToast({
             message: "Quantity added to existing lot.",
@@ -214,13 +220,16 @@ function ItemForm({ mode }: ItemFormProps) {
         const newLot = form.newLotId.trim();
         const newQty = Number(form.quantity);
         const newDate = form.expDate;
+        const newUnitPrice = Number(form.unitPrice); //ADD: unit price field
 
         const itemNameChanged = newName && newName !== matchedItem.name;
         const lotIdChanged = newLot && newLot !== matchedStock.lot_id;
         const qtyChanged = !isNaN(newQty) && newQty !== matchedStock.item_qty;
         const dateChanged = newDate !== matchedStock.expiry_date?.split("T")[0];
+        const unitPriceChanged = newUnitPrice !== matchedStock.unit_price; //ADD: unit price field
 
-        if (!itemNameChanged && !lotIdChanged && !qtyChanged && !dateChanged) {
+        //ADD: Unit price condition
+        if (!itemNameChanged && !lotIdChanged && !qtyChanged && !dateChanged && !unitPriceChanged) {
           throw new Error("No changes detected.");
         }
 
@@ -235,6 +244,7 @@ function ItemForm({ mode }: ItemFormProps) {
               ? null // <-- send null, not undefined
               : newDate
             : undefined,
+          unitPrice: form.unitPrice ? Number(form.unitPrice) : undefined, //ADD: unit price field
           userId: user.id,
         });
 
@@ -388,6 +398,8 @@ function ItemForm({ mode }: ItemFormProps) {
               className="w-full"
               placeholder="Enter unit price"
               inputClassName="bg-white"
+              step="0.01"
+              min="0"
             />
 
             <Input
@@ -529,6 +541,9 @@ function ItemForm({ mode }: ItemFormProps) {
             className="w-full"
             placeholder="Enter unit price"
             inputClassName="bg-white"
+            disabled={isAdd && disableUnitPrice} //ADD: disable unit price for existing lots
+            step="0.01"
+            min="0"
           />
 
           <Input
