@@ -285,7 +285,8 @@ export const inventoryApi = {
           item_qty,
           expiry_date,
           updated_at,
-          is_deleted
+          is_deleted,
+          unit_price
         )
       `
       )
@@ -335,7 +336,8 @@ export const inventoryApi = {
           item_qty,
           expiry_date,
           updated_at,
-          is_deleted
+          is_deleted,
+          unit_price
         )
       `
       )
