@@ -53,7 +53,7 @@ function ReportCard({ itemsAdded, itemsTaken }: ReportCardProps) {
               {itemsTaken}
             </Heading>
             <p className="text-xs sm:text-sm text-black font-Work-Sans group-hover:text-white group-active:text-white">
-              Items Taken
+              Items Taken 67
             </p>
           </div>
         </div>
