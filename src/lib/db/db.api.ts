@@ -161,6 +161,7 @@ export interface CreateItemRequest {
     quantity: number;
     expiryDate?: string;
     userId: string;
+    unitPrice?: number; //ADD: unit price field
   };
 }
 
@@ -208,6 +209,15 @@ export const inventoryApi = {
           false
         );
       }
+      //ADD: unit price validation
+      if (data.initialStock.unitPrice !== undefined) {
+        validateNumber(
+          data.initialStock.unitPrice, 
+          "initialStock.unitPrice", 
+          { min: 0 }, 
+          false
+        );
+      }
     }
     logger.info(`Creating item: ${data.name}`);
 
@@ -234,6 +244,7 @@ export const inventoryApi = {
         lot_id: data.initialStock.lotId,
         item_qty: 0,
         expiry_date: data.initialStock.expiryDate || null,
+        unit_price: data.initialStock.unitPrice || null //ADD: unit price field
       });
 
       if (stockError) {
@@ -274,7 +285,8 @@ export const inventoryApi = {
           item_qty,
           expiry_date,
           updated_at,
-          is_deleted
+          is_deleted,
+          unit_price
         )
       `
       )
@@ -324,7 +336,8 @@ export const inventoryApi = {
           item_qty,
           expiry_date,
           updated_at,
-          is_deleted
+          is_deleted,
+          unit_price
         )
       `
       )
@@ -428,6 +441,7 @@ export const inventoryApi = {
     newLotId,
     quantity,
     expiryDate,
+    unitPrice,
     userId,
   }: {
     itemId: string;
@@ -436,6 +450,7 @@ export const inventoryApi = {
     newLotId?: string;
     quantity?: number;
     expiryDate?: string | null; // <-- allow null here
+    unitPrice?: number; //ADD: unit price field
     userId: string;
   }) {
     validateString(itemId, "itemId");
@@ -447,6 +462,7 @@ export const inventoryApi = {
       validateNumber(quantity, "quantity", { min: 1, integer: true }, false);
     if (expiryDate !== undefined) validateDate(expiryDate, "expiryDate", false);
     validateString(userId, "userId");
+    if (unitPrice !== undefined) validateNumber(unitPrice, "unitPrice", { min: 0 }, false); //ADD: unit price validation
     logger.info(
       `Updating item stock details for item ${itemId}, lot ${oldLotId}`
     );
@@ -488,6 +504,11 @@ export const inventoryApi = {
     // Update expiration date
     if (expiryDate !== undefined) {
       updates.expiry_date = expiryDate === null ? null : expiryDate;
+    }
+
+    //ADD: Update unit price
+    if (unitPrice !== undefined) {
+      updates.unit_price = unitPrice;
     }
 
     if (Object.keys(updates).length > 0) {
@@ -532,18 +553,24 @@ export const inventoryApi = {
     expiryDate,
     userId,
     quantity,
+    unitPrice,
   }: {
     itemId: string;
     lotId: string;
     expiryDate?: string;
     userId: string;
     quantity: number;
+    unitPrice?: number //ADD: unit price field
   }) {
     validateString(itemId, "itemId");
     validateString(lotId, "lotId");
     if (expiryDate !== undefined) validateDate(expiryDate, "expiryDate", false);
     validateString(userId, "userId");
     validateNumber(quantity, "quantity", { min: 1, integer: true });
+    //ADD: unit price validation
+    if(unitPrice !== undefined){
+      validateNumber(unitPrice, "unitPrice", { min: 0 }, false);
+    }
     logger.info(`Creating new lot ${lotId} for item ID ${itemId}`);
 
     const { error: stockError } = await supabase.from("item_stocks").insert({
@@ -551,6 +578,7 @@ export const inventoryApi = {
       lot_id: lotId,
       item_qty: 0,
       expiry_date: expiryDate || null,
+      unit_price: unitPrice || null //ADD: unit price field
     });
 
     if (stockError) {
@@ -1352,6 +1380,38 @@ export const inventoryApi = {
     });
 
     return { itemsAdded, itemsTaken };
+  },
+
+  /*
+  * Get the totals for inventory value and expired items.
+  */
+  async getFinancialSummary() { // TODO: implement backend
+    logger.info("Calculating financial summary");
+  
+  // Get all active items
+    const items = await this.getItems("active");
+    
+    // Calculate total inventory value
+    let totalInventoryValue = 0;
+    items.forEach((item: any) => {
+      item.item_stocks?.forEach((stock: any) => {
+        totalInventoryValue += (stock.item_qty || 0) * (stock.unit_price || 0);
+      });
+    });
+    const expiredItems = await this.getExpiredItems();
+  
+    // Calculate expiration loss value
+    let totalExpirationValue = 0;
+    expiredItems.forEach((stock: any) => {
+      totalExpirationValue += (stock.item_qty || 0) * (stock.unit_price || 0);
+    });
+
+    logger.success(`Financial summary: Inventory=₱${totalInventoryValue.toFixed(2)}, Expired=₱${totalExpirationValue.toFixed(2)}`);
+    
+    return { 
+      totalInventoryValue: totalInventoryValue.toFixed(2), 
+      totalExpirationValue: totalExpirationValue.toFixed(2) 
+    };
   },
 
   /**

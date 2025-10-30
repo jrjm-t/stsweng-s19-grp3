@@ -64,6 +64,7 @@ export type Database = {
           item_id: string
           item_qty: number
           lot_id: string
+          unit_price: number | null //ADD: unit price field
           updated_at: string
         }
         Insert: {
@@ -73,6 +74,7 @@ export type Database = {
           item_id: string
           item_qty: number
           lot_id: string
+          unit_price: number | null //ADD: unit price field
           updated_at?: string
         }
         Update: {
@@ -82,6 +84,7 @@ export type Database = {
           item_id?: string
           item_qty?: number
           lot_id?: string
+          unit_price: number | null //ADD: unit price field
           updated_at?: string
         }
         Relationships: [

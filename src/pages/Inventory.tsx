@@ -12,6 +12,8 @@ const columns = [
   { key: "name", label: "Item Name" },
   { key: "lotId", label: "Lot ID" },
   { key: "qty", label: "Qty" },
+  { key: "unitPrice", label: "Unit Price" },
+  { key: "totalPrice", label: "Total Price" },
   { key: "expDate", label: "Expiration Date" },
   { key: "lastModified", label: "Last Modified" },
   { key: "action", label: "Action" },
@@ -44,6 +46,8 @@ function Inventory() {
             name: item.name,
             lotId: item.lotId,
             qty: item.totalQty,
+            unitPrice: "0.00", //ADD: unit price field
+            totalPrice: "0.00", //ADD: total price field
             expDate: item.expDate,
             lastModified: item.lastModified || "N/A",
             lastModifiedRaw: item.lastModified || "",
@@ -56,6 +60,8 @@ function Inventory() {
             name: stock.items.name,
             lotId: stock.lot_id,
             qty: stock.item_qty,
+            unitPrice: stock.unit_price?.toFixed(2) || "0.00", //ADD: unit price field
+            totalPrice: ((stock.item_qty || 0) * (stock.unit_price || 0)).toFixed(2), //ADD: total price field
             expDate: stock.expiry_date?.split("T")[0] || "N/A",
             lastModified: stock.updated_at?.split("T")[0] || "N/A",
             lastModifiedRaw: stock.updated_at || "",
@@ -67,6 +73,8 @@ function Inventory() {
             name: stock.items.name,
             lotId: stock.lot_id,
             qty: stock.item_qty,
+            unitPrice: stock.unit_price?.toFixed(2) || "0.00", //ADD: unit price field
+            totalPrice: ((stock.item_qty || 0) * (stock.unit_price || 0)).toFixed(2), //ADD: total price field
             expDate: stock.expiry_date?.split("T")[0] || "N/A",
             lastModified: stock.updated_at?.split("T")[0] || "N/A",
             lastModifiedRaw: stock.updated_at || "",
@@ -78,6 +86,8 @@ function Inventory() {
             name: stock.items.name,
             lotId: stock.lot_id,
             qty: stock.item_qty,
+            unitPrice: stock.unit_price?.toFixed(2) || "0.00", //ADD: unit price field
+            totalPrice: ((stock.item_qty || 0) * (stock.unit_price || 0)).toFixed(2), //ADD: total price field
             expDate: stock.expiry_date?.split("T")[0] || "N/A",
             lastModified: stock.updated_at?.split("T")[0] || "N/A",
             lastModifiedRaw: stock.updated_at || "",
@@ -92,6 +102,8 @@ function Inventory() {
                 name: item.name,
                 lotId: stock.lot_id,
                 qty: stock.item_qty,
+                unitPrice: stock.unit_price?.toFixed(2) || "0.00", //ADD: unit price field
+                totalPrice: ((stock.item_qty || 0) * (stock.unit_price || 0)).toFixed(2), //ADD: total price field
                 expDate: stock.expiry_date?.split("T")[0] || "N/A",
                 lastModified: stock.updated_at?.split("T")[0] || "N/A",
                 lastModifiedRaw: stock.updated_at || "",
@@ -174,6 +186,8 @@ function Inventory() {
               name: "",
               lotId: "",
               qty: "",
+              unitPrice: "", //ADD: unit price field
+              totalPrice: "", //ADD: total price field
               expDate: "",
               lastModified: "",
               action: "",

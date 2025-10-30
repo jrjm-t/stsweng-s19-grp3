@@ -7,6 +7,8 @@ interface InventoryCardProps {
     name: string;
     lotId: string;
     qty: number;
+    unitPrice: string;
+    totalPrice: string;
     expDate: string;
     lastModified: string;
   };
@@ -37,6 +39,8 @@ function InventoryCard({ item }: InventoryCardProps) {
           </span>
         </div>
         <p className="text-sm">Qty: {item.qty}</p>
+        <p className="text-sm">Unit Price: Php {item.unitPrice}</p>
+        <p className="text-sm">Total Price: Php {item.totalPrice}</p>
         <p className="text-sm">Expiry: {item.expDate}</p>
       </div>
 
