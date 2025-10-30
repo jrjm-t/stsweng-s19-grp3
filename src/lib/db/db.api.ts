@@ -1386,12 +1386,32 @@ export const inventoryApi = {
   * Get the totals for inventory value and expired items.
   */
   async getFinancialSummary() { // TODO: implement backend
+    logger.info("Calculating financial summary");
+  
+  // Get all active items
+    const items = await this.getItems("active");
+    
+    // Calculate total inventory value
+    let totalInventoryValue = 0;
+    items.forEach((item: any) => {
+      item.item_stocks?.forEach((stock: any) => {
+        totalInventoryValue += (stock.item_qty || 0) * (stock.unit_price || 0);
+      });
+    });
+    const expiredItems = await this.getExpiredItems();
+  
+    // Calculate expiration loss value
+    let totalExpirationValue = 0;
+    expiredItems.forEach((stock: any) => {
+      totalExpirationValue += (stock.item_qty || 0) * (stock.unit_price || 0);
+    });
 
-    // FIXME: 6 7 🫱🫲
-    let totalInventoryValue = 67; 
-    let totalExpirationValue = 67;
-
-    return { totalInventoryValue, totalExpirationValue };
+    logger.success(`Financial summary: Inventory=₱${totalInventoryValue.toFixed(2)}, Expired=₱${totalExpirationValue.toFixed(2)}`);
+    
+    return { 
+      totalInventoryValue: totalInventoryValue.toFixed(2), 
+      totalExpirationValue: totalExpirationValue.toFixed(2) 
+    };
   },
 
   /**
