@@ -35,3 +35,15 @@
 //     }
 //   }
 // }
+Cypress.Commands.add('login', (username, password) => {
+  // cy.session so no need to relogin for each test
+  cy.session([username, password], () => {
+    // IMPORTANT: modify the URL as per apps' routing
+    cy.visit('/vrnqxh6p2dj722u7/login');
+
+    cy.get('#username').type(username);
+    cy.get('#password').type(password);
+    cy.get('button[type="submit"]').click();
+    cy.url().should('include', '/dashboard');
+  });
+});
