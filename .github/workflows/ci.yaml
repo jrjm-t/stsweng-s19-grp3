@@ -37,11 +37,11 @@ jobs:
       - name: Build Project
         run: npm run build
 
-      #uncomment pag oks na cypress
-      # - name: Run Cypress E2E Tests
-      #   uses: cypress-io/github-action@v6
-      #   with:
-      #     build: npm run build
-      #     start: npm run preview
-      #     wait-on: 'http://localhost:4173'
-      #     browser: chrome
+      - name: Run Cypress E2E Tests
+        uses: cypress-io/github-action@v6
+        with:
+          build: npm run build
+          start: npm run preview
+          wait-on: 'http://localhost:4173'
+          browser: chrome
+
