@@ -1350,7 +1350,7 @@ export const inventoryApi = {
   /**
    * Get total quantities added and taken within the current month.
    */
-  async getMonthlyTransactionSummary() {
+  async getMonthlyTransactionSummary(): Promise<{ itemsAdded: number; itemsTaken: number }> {
     const startDate = new Date(
       new Date().getFullYear(),
       new Date().getMonth(),
