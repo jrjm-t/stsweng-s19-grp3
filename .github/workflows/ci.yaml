@@ -39,6 +39,9 @@ jobs:
 
       - name: Run Cypress E2E Tests
         uses: cypress-io/github-action@v6
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
         with:
           build: npm run build
           start: npm run preview
