@@ -41,6 +41,7 @@ describe('Inventory Page', () => {
     cy.intercept('GET', '**/items?select=*', {
       fixture: 'items.json',
     }).as('getItems');
+    
     cy.intercept('PATCH', '**/item_stocks*', {
       statusCode: 200,
     }).as('updateStock');
