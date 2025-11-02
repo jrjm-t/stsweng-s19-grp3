@@ -16,15 +16,17 @@ function InventoryTable({ columns, data }: TableProps) {
   const { selectedItems, updateItemQty } = useItemSelection();
 
   return (
-    <div className="w-[1000px] rounded-md overflow-hidden">
-      <table className="w-full table-fixed border-collapse text-center">
+    <div className="w-full rounded-md overflow-hidden">
+      <table className="w-full table-fixed border-collapse text-center min-w-[800px]">
         <colgroup>
-          <col className="w-[220px]" />
+          <col className="w-[160px]" />
           <col className="w-[180px]" />
-          <col className="w-[75px]" />
-          <col className="w-[200px]" />
-          <col className="w-[200px]" />
-          <col className="w-[125px]" />
+          <col className="w-[60px]" />
+          <col className="w-[100px]" />
+          <col className="w-[100px]" />
+          <col className="w-[100px]" />
+          <col className="w-[100px]" /> 
+          <col className="w-[100px]" /> 
         </colgroup>
 
         <thead>

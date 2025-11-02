@@ -10,7 +10,9 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "baseUrl": ".",
-    "types": ["vite/client", "react", "react-dom"],
+    "types": ["vite/client", "react", "react-dom", "jest"],
+    "allowJs": true,
+    "noEmit": true,
     "paths": {
       "@/*": ["src/*"]
     }
