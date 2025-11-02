@@ -98,4 +98,31 @@ describe("inventoryApi - Cost Tracking", () => {
       expect(summary.totalExpirationValue).toBe("0.00"); // no expired stocks
     });
   });
+
+  describe('negative price validation', () => {
+    it('should throw an error if createItem is called with a negative unitPrice', async () => {
+      const badItem = {
+        name: 'Bad Item',
+        initialStock: {
+          lotId: 'L1',
+          quantity: 10,
+          userId: 'U1',
+          unitPrice: -5.00,
+        },
+      };
+
+      await expect(inventoryApi.createItem(badItem as any)).rejects.toThrow('initialStock.unitPrice must be >= 0');
+    });
+
+    it('should throw an error if updateItemStockDetails is called with a negative unitPrice', async () => {
+      const badUpdate = {
+        itemId: 'I1',
+        oldLotId: 'L1',
+        unitPrice: -10.00,
+        userId: 'U1',
+      };
+
+      await expect(inventoryApi.updateItemStockDetails(badUpdate as any)).rejects.toThrow('unitPrice must be >= 0');
+    });
+  });
 });
