@@ -1,16 +1,18 @@
 [
   {
+    "id": "item-id-123", 
     "name": "Test Bandages",
     "item_stocks": [
       { 
         "lot_id": "B123", 
         "item_qty": 10, 
-        "unit_price": 5.00, 
+        "unit_price": 5, 
         "expiry_date": "2025-12-31" 
       }
     ]
   },
   {
+    "id": "item-id-456",
     "name": "Test Gauze",
     "item_stocks": [
       { 
