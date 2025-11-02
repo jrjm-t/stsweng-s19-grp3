@@ -7,10 +7,6 @@ describe('Dashboard Page', () => {
     cy.intercept('GET', '**/item_stocks*', { body: [] }).as('getStockCalls');
     cy.intercept('GET', '**/transactions*', { body: [] }).as('getTransactionCalls');
 
-    cy.intercept('GET', '**/rpc/get_financial_summary', {
-      body: { totalInventoryValue: 100.0, totalExpirationValue: 0.0 },
-    }).as('getFinancialSummary');
-
     cy.login('admin', '123456');
   });
 
