@@ -199,7 +199,7 @@ function Inventory() {
   return (
     <div className="flex flex-col items-center justify-start min-h-screen mt-3 p-4 gap-4">
       {/* Container */}
-      <div className="w-full max-w-[1000px] border border-black/70 rounded-md overflow-hidden bg-white">
+      <div className="w-full max-w-[1300px] border border-black/70 rounded-md overflow-hidden bg-white">
         {/* Header */}
         <div className="bg-primary px-4 py-3 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
           {/* Left side - Buttons */}
