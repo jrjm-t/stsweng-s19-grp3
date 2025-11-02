@@ -40,8 +40,8 @@ function Dashboard() {
 
         const { itemsAdded, itemsTaken } =
           await inventoryApi.getMonthlyTransactionSummary();
-        setItemsAdded(Number(itemsAdded));
-        setItemsTaken(Number(itemsTaken));
+        setItemsAdded(itemsAdded);
+        setItemsTaken(itemsTaken);
 
         const { totalInventoryValue, totalExpirationValue } =
           await inventoryApi.getFinancialSummary();
