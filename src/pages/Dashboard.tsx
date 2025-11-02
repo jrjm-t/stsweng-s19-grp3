@@ -40,13 +40,14 @@ function Dashboard() {
 
         const { itemsAdded, itemsTaken } =
           await inventoryApi.getMonthlyTransactionSummary();
-        setItemsAdded(itemsAdded as number);
-        setItemsTaken(itemsTaken as number);
+        setItemsAdded(itemsAdded);
+        setItemsTaken(itemsTaken);
 
         const { totalInventoryValue, totalExpirationValue } =
           await inventoryApi.getFinancialSummary();
-        setTotalInventoryValue(totalInventoryValue);
-        setTotalExpirationValue(totalExpirationValue);
+        setTotalInventoryValue(Number(totalInventoryValue));
+        setTotalExpirationValue(Number(totalExpirationValue));
+
 
       } catch (error) {
         console.error("Failed to load dashboard data:", error);
