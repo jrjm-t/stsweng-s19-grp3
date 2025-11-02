@@ -1379,10 +1379,7 @@ export const inventoryApi = {
         itemsTaken += Math.abs(t.item_qty_change);
     });
 
-    return { 
-      itemsAdded: Number(itemsAdded),
-      itemsTaken: Number(itemsTaken),
-    };
+    return { itemsAdded, itemsTaken };
   },
 
   /*
