@@ -103,7 +103,7 @@ export const AuthContextProvider = ({
         .from("users")
         .select("name")
         .eq("name", username)
-        .single();
+        .maybeSingle();
 
       if (checkError) {
         if (checkError.code !== 'PGRST116') {
