@@ -23,11 +23,11 @@ import Auth404 from './pages/Auth404';
 const router = createBrowserRouter([
   {
     path: "/login",
-    element: <Auth404 />,
+    element: <Login />,
   },
   {
     path: "/sign-up",
-    element: <Auth404 />,
+    element: <SignUp />,
   },
   {
     path: "/vrnqxh6p2dj722u7/login",
