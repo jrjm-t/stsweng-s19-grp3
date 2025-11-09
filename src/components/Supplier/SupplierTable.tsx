@@ -15,14 +15,10 @@ function SupplierTable({ columns, data }: TableProps) {
     <div className="w-full rounded-md overflow-hidden">
       <table className="w-full table-fixed border-collapse text-center min-w-[800px]">
         <colgroup>
-          <col className="w-[160px]" />
-          <col className="w-[180px]" />
-          <col className="w-[60px]" />
-          <col className="w-[100px]" />
-          <col className="w-[100px]" />
-          <col className="w-[100px]" />
-          <col className="w-[100px]" />
-          <col className="w-[100px]" />
+          <col className="w-[200px]" />
+          <col className="w-[150px]" />
+          <col className="w-[200px]" />
+          <col className="w-auto" />
         </colgroup>
 
         <thead>
