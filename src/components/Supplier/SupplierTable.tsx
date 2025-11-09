@@ -63,3 +63,5 @@ function SupplierTable({ columns, data }: TableProps) {
     </div>
   );
 }
+
+export default SupplierTable;
