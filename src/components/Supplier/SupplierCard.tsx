@@ -16,9 +16,9 @@ function SupplierCard({ supplier }: SupplierCardProps) {
         <div className="flex justify-between items-center mb-2">
           <h2 className="text-lg font-semibold truncate">{supplier.name}</h2>
         </div>
-        <p className="text-sm">Remarks {supplier.remarks}</p>
         <p className="text-sm">Phone Number {supplier.phoneNumber}</p>
         <p className="text-sm">Email Address {supplier.emailAddress}</p>
+        <p className="text-sm">Remarks {supplier.remarks}</p>
       </div>
     </div>
   );
