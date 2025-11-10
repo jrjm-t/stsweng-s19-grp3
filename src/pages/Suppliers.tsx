@@ -26,8 +26,9 @@ function Suppliers() {
     const fetchSuppliers = async () => {
       setLoading(true);
       try {
-        const suppliers = await getSuppliers(); // under assumption API exists
-        setRawData(suppliers);
+        // under assumption API exists
+        //const suppliers = await suppliersApi.getSuppliers();
+        //setRawData(suppliers);
       } catch (error) {
         console.error("Error fetching suppliers:", error);
       } finally {
