@@ -83,7 +83,7 @@ function Suppliers() {
           <div className="text-white text-lg font-semibold">Suppliers</div>
 
           {/* Right side - Search Bar */}
-          <div className="flex flex-col gap-2 md:flex-row md:gap-4">
+          <div className="w-full md:w-[200px] px-2 py-1 rounded text-sm text-black bg-white border border-gray-300">
             <input
               type="text"
               placeholder="Search suppliers..."
