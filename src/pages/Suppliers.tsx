@@ -10,7 +10,7 @@ const columns = [
   { key: "name", label: "Supplier" },
   { key: "phoneNumber", label: "Phone Number" },
   { key: "emailAddress", label: "Email Address" },
-  { key: "Remarks", label: "Remarks" },
+  { key: "remarks", label: "Remarks" },
 ];
 
 const ROWS_PER_PAGE = 9;
