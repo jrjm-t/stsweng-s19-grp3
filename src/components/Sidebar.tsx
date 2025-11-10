@@ -17,6 +17,7 @@ export default function Sidebar({
     { path: "/activity-log", text: "Activity Log" },
     { path: "/add-item", text: "Add Item" },
     { path: "/check-out", text: "Confirmation" },
+    { path: "/suppliers", text: "Suppliers" },
   ];
 
   const adminItems = [
