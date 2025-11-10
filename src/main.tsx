@@ -8,6 +8,7 @@ import SignUp from "./pages/SignUp";
 import Dashboard from "./pages/Dashboard";
 import Inventory from "./pages/Inventory";
 import ActivityLog from "./pages/ActivityLog";
+import Suppliers from "./pages/Suppliers";
 import AddItem from "./pages/AddItem";
 import CheckOut from "./pages/CheckOut";
 import Notifications from "./pages/Notifications";
@@ -18,7 +19,7 @@ import GenerateReport from "./pages/GenerateReport";
 import { AuthContextProvider } from "./lib/db/db.auth";
 import { SearchProvider } from "./contexts/SearchContext";
 import { ItemSelectionProvider } from "./contexts/ItemSelectionContext";
-import Auth404 from './pages/Auth404';
+import Auth404 from "./pages/Auth404";
 
 const router = createBrowserRouter([
   {
@@ -48,6 +49,10 @@ const router = createBrowserRouter([
       {
         path: "/inventory",
         element: <Inventory />,
+      },
+      {
+        path: "/suppliers",
+        element: <Suppliers />,
       },
       {
         path: "/activity-log",
