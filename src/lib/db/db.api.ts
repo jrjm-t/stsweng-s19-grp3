@@ -1479,3 +1479,29 @@ export const inventoryApi = {
     return itemDetails;
   },
 };
+
+export const supplierApi = {
+  async createSupplier({
+    name,
+    contactInfo,
+    address,
+  }: {
+    name: string;
+    contactInfo: string;
+    address: string;
+  }) {
+    // Implementation for creating a supplier
+  },
+  async getSuppliers() {
+    // Implementation for fetching suppliers
+  },  
+  async updateSupplier(
+    id: string,
+    updates: { name?: string; contactInfo?: string; address?: string }
+  ) {
+    // Implementation for updating a supplier
+  },
+  async deleteSupplier(id: string) {
+    // Implementation for deleting a supplier
+  },
+};

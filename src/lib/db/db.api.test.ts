@@ -1,4 +1,4 @@
-import { inventoryApi } from "./db.api";
+import { inventoryApi, supplierApi } from "./db.api";
 
 // prevent Jest from crashing when it sees '\
 // import.meta.env' which only Vite understands
@@ -374,8 +374,6 @@ describe("supplierApi - Supplier Management", () => {
       await expect(supplierApi.updateSupplier(adminUser, "sup-1", updateData))
         .rejects.toThrow("Email is invalid");
     });
-
-  });
 
   describe("DELETE - Remove Supplier (Hard Delete)", () => {
     it("should hard delete existing supplier for admin", async () => {
