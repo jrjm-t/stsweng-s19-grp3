@@ -4,7 +4,7 @@ import Select from "react-select";
 import Input from "./General/Input";
 import Button from "./General/Button";
 import Toast from "./General/Toast";
-import { supplierApi } from "../api/supplierApi"; // to be implemented
+// import { supplierApi } from "../api/supplierApi"; // to be implemented
 import { useAuth } from "../lib/db/db.auth"; // not sure about this import
 
 interface SupplierFormProps {
@@ -31,11 +31,11 @@ function SupplierForm({ mode }: SupplierFormProps) {
   const isDelete = mode === "delete";
 
   const fetchSuppliers = async () => {
-    const data = await supplierApi.getAllSuppliers();
-    setAllSuppliers(data);
-    setSupplierOptions(
-      data.map((s: any) => ({ value: s.name, label: s.name }))
-    );
+    // const data = await supplierApi.getAllSuppliers();
+    // setAllSuppliers(data);
+    // setSupplierOptions(
+    //   data.map((s: any) => ({ value: s.name, label: s.name }))
+    // );
   };
 
   useEffect(() => {
@@ -71,10 +71,10 @@ function SupplierForm({ mode }: SupplierFormProps) {
       if (isAdd) {
         if (!form.name) throw new Error("Supplier name is required.");
 
-        await supplierApi.createSupplier({
-          ...form,
-          userId: user.id,
-        });
+        // await supplierApi.createSupplier({
+        //  ...form,
+        //  userId: user.id,
+        //});
 
         setToast({ message: "Supplier added successfully.", type: "success" });
       }
@@ -83,11 +83,11 @@ function SupplierForm({ mode }: SupplierFormProps) {
         const selected = allSuppliers.find((s) => s.name === form.name);
         if (!selected) throw new Error("Supplier does not exist.");
 
-        await supplierApi.updateSupplier({
-          supplierId: selected.id,
-          ...form,
-          userId: user.id,
-        });
+        //await supplierApi.updateSupplier({
+        //  supplierId: selected.id,
+        //  ...form,
+        //  userId: user.id,
+        //});
 
         setToast({ message: "Supplier updated.", type: "success" });
       }
@@ -96,10 +96,10 @@ function SupplierForm({ mode }: SupplierFormProps) {
         const selected = allSuppliers.find((s) => s.name === form.name);
         if (!selected) throw new Error("Supplier not found.");
 
-        await supplierApi.deleteSupplier({
-          supplierId: selected.id,
-          userId: user.id,
-        });
+        // await supplierApi.deleteSupplier({
+        //  supplierId: selected.id,
+        //  userId: user.id,
+        // });
 
         setToast({ message: "Supplier deleted.", type: "success" });
       }
