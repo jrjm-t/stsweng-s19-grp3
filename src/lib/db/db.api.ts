@@ -1480,28 +1480,80 @@ export const inventoryApi = {
   },
 };
 
+// ===== VALIDATION HELPER FOR EMAIL =====
+function validateEmail(email: string | undefined | null, required = false) {
+  if (!email && !required) return; // Optional and not provided
+  
+  if (required && (!email || email.trim() === "")) {
+    throw new ApiError("Email is required", 400, "BAD_REQUEST");
+  }
+  
+  if (email) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      throw new ApiError("Email is invalid", 400, "BAD_REQUEST");
+    }
+  }
+}
+
+// ===== SUPPLIER INTERFACES =====
+export interface CreateSupplierRequest {
+  name: string;
+  phone?: string | null;
+  email?: string | null;
+  remarks?: string | null;
+}
+
+export interface UpdateSupplierRequest {
+  name?: string;
+  phone?: string | null;
+  email?: string | null;
+  remarks?: string | null;
+}
+
+export interface SupplierFilterOptions {
+  nameContains?: string;
+  remarks?: string;
+}
+
 export const supplierApi = {
-  async createSupplier({
-    name,
-    contactInfo,
-    address,
-  }: {
-    name: string;
-    contactInfo: string;
-    address: string;
-  }) {
-    // Implementation for creating a supplier
+  /**
+   * Create a new supplier
+   */
+  async createSupplier(data: CreateSupplierRequest) {
+    
   },
+
+  /**
+   * Get all suppliers, ordered by name
+   */
   async getSuppliers() {
-    // Implementation for fetching suppliers
-  },  
-  async updateSupplier(
-    id: string,
-    updates: { name?: string; contactInfo?: string; address?: string }
-  ) {
-    // Implementation for updating a supplier
+    
   },
+
+  /**
+   * Get a single supplier by ID
+   */
+  async getSupplierById(id: string) {
+    
+  },
+
+  /**
+   * Update an existing supplier
+   */
+  async updateSupplier(id: string, updates: UpdateSupplierRequest) {
+    
+  },
+
+  /**
+   * Delete a supplier (hard delete)
+   */
   async deleteSupplier(id: string) {
-    // Implementation for deleting a supplier
   },
+
+  async filterSuppliers(options: SupplierFilterOptions) {
+    // Implementation for filtering suppliers
+  },
+
+
 };
