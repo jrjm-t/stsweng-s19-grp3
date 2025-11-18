@@ -156,12 +156,14 @@ const STOCK_FILTERS = ["all", "deleted", "active"] as const;
 
 export interface CreateItemRequest {
   name: string;
+  supplierId?: string;
   initialStock?: {
     lotId: string;
     quantity: number;
     expiryDate?: string;
     userId: string;
-    unitPrice?: number; //ADD: unit price field
+    unitPrice?: number;
+    supplierId?: string;
   };
 }
 
@@ -219,6 +221,11 @@ export const inventoryApi = {
         );
       }
     }
+    // Validate supplierId if provided
+    if (data.supplierId !== undefined && data.supplierId !== null) {
+      validateString(data.supplierId, "supplierId", false);
+    }
+
     logger.info(`Creating item: ${data.name}`);
 
     const { data: item, error: itemError } = await supabase
@@ -239,12 +246,16 @@ export const inventoryApi = {
         `Creating new lot ${data.initialStock.lotId} for item ${item.name}`
       );
 
+      // Use supplierId from initialStock if provided, otherwise use item-level supplierId
+      const finalSupplierId = data.initialStock.supplierId || data.supplierId || null;
+
       const { error: stockError } = await supabase.from("item_stocks").insert({
         item_id: item.id,
         lot_id: data.initialStock.lotId,
         item_qty: 0,
         expiry_date: data.initialStock.expiryDate || null,
-        unit_price: data.initialStock.unitPrice || null //ADD: unit price field
+        unit_price: data.initialStock.unitPrice || null, 
+        supplier_id: finalSupplierId,
       });
 
       if (stockError) {
@@ -286,7 +297,15 @@ export const inventoryApi = {
           expiry_date,
           updated_at,
           is_deleted,
-          unit_price
+          unit_price,
+          supplier_id,
+          suppliers (
+            id,
+            name,
+            phone_number,
+            email,
+            remarks
+          )
         )
       `
       )
@@ -337,7 +356,15 @@ export const inventoryApi = {
           expiry_date,
           updated_at,
           is_deleted,
-          unit_price
+          unit_price,
+          supplier_id,
+          suppliers (
+            id,
+            name,
+            phone_number,
+            email,
+            remarks
+          )
         )
       `
       )
@@ -973,7 +1000,16 @@ export const inventoryApi = {
     logger.info(`Fetching items with stock <= ${threshold}`);
     const { data, error } = await supabase
       .from("item_stocks")
-      .select(`*, items ( name )`)
+      .select(`
+        *, 
+        items ( name ),
+        suppliers (
+          id,
+          name,
+          phone_number,
+          email
+        )
+      `)
       .lte("item_qty", threshold)
       .eq("is_deleted", false) // 👈 Exclude soft-deleted
       .order("item_qty", { ascending: true });
@@ -999,7 +1035,16 @@ export const inventoryApi = {
 
     const { data, error } = await supabase
       .from("item_stocks")
-      .select(`*, items ( name )`)
+      .select(`
+        *,
+        items ( name ),
+        suppliers (
+          id,
+          name,
+          phone_number,
+          email
+        )
+      `)
       .not("expiry_date", "is", null)
       .gte("expiry_date", todayStr)
       .lte("expiry_date", futureStr)
@@ -1024,7 +1069,16 @@ export const inventoryApi = {
 
     const { data, error } = await supabase
       .from("item_stocks")
-      .select(`*, items ( name )`)
+      .select(`
+        *,
+        items ( name ),
+        suppliers (
+          id,
+          name,
+          phone_number,
+          email
+        )
+      `)
       .not("expiry_date", "is", null)
       .lt("expiry_date", todayStr)
       .eq("is_deleted", false) // 👈 Exclude soft-deleted
@@ -1435,17 +1489,22 @@ export const inventoryApi = {
 
     let query = supabase
       .from("item_stocks")
-      .select(
-        `
-      *,
-      items (
-        id,
-        name,
-        created_at,
-        updated_at
-      )
-    `
-      )
+      .select(`
+        *,
+        items (
+          id,
+          name,
+          created_at,
+          updated_at
+        ),
+        suppliers (
+          id,
+          name,
+          phone_number,
+          email,
+          remarks
+        )
+      `)
       .in("lot_id", lotIds)
       .order("items(name)", { ascending: true });
 
@@ -1469,10 +1528,10 @@ export const inventoryApi = {
       return [];
     }
 
-    // Rename "items" field to "item" for consistency
-    const itemDetails = data.map(({ items, ...stock }) => ({
+    const itemDetails = data.map(({ items, suppliers, ...stock }) => ({
       ...stock,
       item: items,
+      supplier: suppliers,
     }));
 
     logger.success(`Fetched ${itemDetails.length} detailed item information`);
