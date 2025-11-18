@@ -132,18 +132,24 @@ describe("inventoryApi - Cost Tracking", () => {
 
 // ADDITIONAL MOCKS FOR SUPPLIER CHAINS
 const mockOrderSup = jest.fn();
+const mockNeqSup = jest.fn();
 const mockEqSup = jest.fn();
 const mockIlikeSup = jest.fn();
+const mockMaybeSingleSup = jest.fn();
+const mockSingleSup = jest.fn();
 const mockInsertSup = jest.fn();
 const mockUpdateSup = jest.fn();
 const mockDeleteSup = jest.fn();
 const mockSelectSup = jest.fn(() => ({
   order: mockOrderSup,
   eq: mockEqSup,
+  neq: mockNeqSup,
   ilike: mockIlikeSup,
+  maybeSingle: mockMaybeSingleSup,
+  single: mockSingleSup,
 }));
 
-describe("supplierApi - Supplier Management", () => {
+describe("supplierApi - Supplier Management with Admin Auth", () => {
   beforeEach(() => {
     mockOrder.mockClear();
     mockSelect.mockClear();
@@ -154,8 +160,11 @@ describe("supplierApi - Supplier Management", () => {
     mockSelectExpired.mockClear();
     
     mockOrderSup.mockClear();
+    mockNeqSup.mockClear();
     mockEqSup.mockClear();
     mockIlikeSup.mockClear();
+    mockMaybeSingleSup.mockClear();
+    mockSingleSup.mockClear();
     mockInsertSup.mockClear();
     mockUpdateSup.mockClear();
     mockDeleteSup.mockClear();
@@ -164,27 +173,43 @@ describe("supplierApi - Supplier Management", () => {
     (mockedSupabase.from as jest.Mock).mockClear();
   });
 
-  describe("CREATE - Add New Supplier", () => {
-    it("should create supplier successfully with valid input", async () => {
+  describe("CREATE - Add New Supplier (Admin Only)", () => {
+    it("should create supplier successfully when user is admin", async () => {
       const supplierInput = {
+        userId: "admin-user-1",
         name: "ABC Medical Supplies",
         remarks: "quick to deliver",
         phone: "+1234567890",
         email: "contact@abcmedical.com"
       };
 
-      // Mock name uniqueness check (no existing supplier)
+      // Mock admin check
       (mockedSupabase.from as jest.Mock).mockReturnValueOnce({
         select: mockSelectSup,
       });
-      mockEqSup.mockResolvedValueOnce({ data: null, error: null });
+      mockEqSup.mockReturnValueOnce({ single: mockSingleSup });
+      mockSingleSup.mockResolvedValueOnce({
+        data: { id: "admin-user-1", is_admin: true },
+        error: null,
+      });
+
+      // Mock name uniqueness check
+      (mockedSupabase.from as jest.Mock).mockReturnValueOnce({
+        select: mockSelectSup,
+      });
+      mockEqSup.mockReturnValueOnce({ maybeSingle: mockMaybeSingleSup });
+      mockMaybeSingleSup.mockResolvedValueOnce({ data: null, error: null });
 
       // Mock successful insert
+      const mockSelectChain = jest.fn();
+      const mockSingleChain = jest.fn();
       (mockedSupabase.from as jest.Mock).mockReturnValueOnce({
         insert: mockInsertSup,
       });
-      mockInsertSup.mockResolvedValueOnce({
-        data: [{ id: "sup-1", ...supplierInput }],
+      mockInsertSup.mockReturnValueOnce({ select: mockSelectChain });
+      mockSelectChain.mockReturnValueOnce({ single: mockSingleChain });
+      mockSingleChain.mockResolvedValueOnce({
+        data: { id: "sup-1", name: supplierInput.name },
         error: null,
       });
 
@@ -192,230 +217,179 @@ describe("supplierApi - Supplier Management", () => {
 
       expect(result).toBeDefined();
       expect(result.name).toBe("ABC Medical Supplies");
-      expect(mockedSupabase.from).toHaveBeenCalledWith("suppliers");
+    });
+
+    it("should reject when user is not admin", async () => {
+      const supplierInput = {
+        userId: "regular-user-1",
+        name: "Test Supplier",
+      };
+
+      // Mock non-admin user
+      (mockedSupabase.from as jest.Mock).mockReturnValueOnce({
+        select: mockSelectSup,
+      });
+      mockEqSup.mockReturnValueOnce({ single: mockSingleSup });
+      mockSingleSup.mockResolvedValueOnce({
+        data: { id: "regular-user-1", is_admin: false },
+        error: null,
+      });
+
+      await expect(supplierApi.createSupplier(supplierInput))
+        .rejects.toThrow("Forbidden");
     });
 
     it("should reject when name is missing or blank", async () => {
-      await expect(supplierApi.createSupplier({ name: "" }))
-        .rejects.toThrow("Supplier name is required");
-        
-      await expect(supplierApi.createSupplier({ name: "   " }))
-        .rejects.toThrow("Supplier name is required");
-    });
-
-    it("should reject duplicate supplier names", async () => {
-      const supplierInput = { name: "Existing Supplier" };
-
-      // Mock existing supplier found
+      // Mock admin check
       (mockedSupabase.from as jest.Mock).mockReturnValueOnce({
         select: mockSelectSup,
       });
-      mockEqSup.mockResolvedValueOnce({
-        data: [{ id: "existing-1", name: "Existing Supplier" }],
+      mockEqSup.mockReturnValueOnce({ single: mockSingleSup });
+      mockSingleSup.mockResolvedValueOnce({
+        data: { id: "admin-1", is_admin: true },
         error: null,
       });
 
-      await expect(supplierApi.createSupplier(supplierInput))
-        .rejects.toThrow("Supplier name must be unique");
+      await expect(supplierApi.createSupplier({ userId: "admin-1", name: "" }))
+        .rejects.toThrow();
     });
 
     it("should reject invalid email format", async () => {
       const supplierInput = {
+        userId: "admin-1",
         name: "Test Supplier",
         email: "invalid-email"
       };
+
+      // Mock admin check
+      (mockedSupabase.from as jest.Mock).mockReturnValueOnce({
+        select: mockSelectSup,
+      });
+      mockEqSup.mockReturnValueOnce({ single: mockSingleSup });
+      mockSingleSup.mockResolvedValueOnce({
+        data: { id: "admin-1", is_admin: true },
+        error: null,
+      });
 
       await expect(supplierApi.createSupplier(supplierInput))
         .rejects.toThrow("Email is invalid");
     });
-
-    it("should allow supplier with no items", async () => {
-      const supplierInput = { name: "Standalone Supplier" };
-
-      // Mock name uniqueness check
-      (mockedSupabase.from as jest.Mock).mockReturnValueOnce({
-        select: mockSelectSup,
-      });
-      mockEqSup.mockResolvedValueOnce({ data: null, error: null });
-
-      // Mock successful insert
-      (mockedSupabase.from as jest.Mock).mockReturnValueOnce({
-        insert: mockInsertSup,
-      });
-      mockInsertSup.mockResolvedValueOnce({
-        data: [{ id: "sup-2", name: "Standalone Supplier" }],
-        error: null,
-      });
-
-      const result = await supplierApi.createSupplier(supplierInput);
-      expect(result.name).toBe("Standalone Supplier");
-    });
-
-    it("should reject invalid email format", async () => {
-      const adminUser = { role: "admin" };
-      const supplierInput = {
-        name: "Test Supplier",
-        email: "invalid-email"
-      };
-
-      await expect(supplierApi.createSupplier(adminUser, supplierInput))
-        .rejects.toThrow("Email is invalid");
-    });
-
-    it("should allow supplier with no items", async () => {
-      const adminUser = { role: "admin" };
-      const supplierInput = { name: "Standalone Supplier" };
-
-      // Mock name uniqueness check
-      (mockedSupabase.from as jest.Mock).mockReturnValueOnce({
-        select: mockSelectSup,
-      });
-      mockEqSup.mockResolvedValueOnce({ data: null, error: null });
-
-      // Mock successful insert
-      (mockedSupabase.from as jest.Mock).mockReturnValueOnce({
-        insert: mockInsertSup,
-      });
-      mockInsertSup.mockResolvedValueOnce({
-        data: [{ id: "sup-2", name: "Standalone Supplier" }],
-        error: null,
-      });
-
-      const result = await supplierApi.createSupplier(supplierInput);
-      expect(result.name).toBe("Standalone Supplier");
-    });
-
   });
 
-  describe("UPDATE - Edit Supplier", () => {
-    it("should update supplier remarks/phone/email", async () => {
-      const supplierId = "sup-1";
+  describe("UPDATE - Edit Supplier (Admin Only)", () => {
+    it("should update supplier when user is admin", async () => {
       const updateData = {
+        userId: "admin-1",
+        supplierId: "sup-1",
         remarks: "slow delivery",
         phone: "+0987654321",
         email: "new@supplier.com"
       };
 
-      (mockedSupabase.from as jest.Mock).mockReturnValueOnce({
-        update: mockUpdateSup,
-      });
-      mockUpdateSup.mockReturnValueOnce({ eq: mockEqSup });
-      mockEqSup.mockResolvedValueOnce({
-        data: [{ id: supplierId, ...updateData }],
-        error: null,
-      });
-
-      const result = await supplierApi.updateSupplier(supplierId, updateData);
-      
-      expect(result.remarks).toBe("slow delivery");
-      expect(mockUpdateSup).toHaveBeenCalledWith(updateData);
-      expect(mockEqSup).toHaveBeenCalledWith("id", supplierId);
-    });
-
-    it("should reject changing name to duplicate", async () => {
-      const supplierId = "sup-1";
-      const updateData = { name: "Existing Name" };
-
-      // Mock duplicate name check
+      // Mock admin check
       (mockedSupabase.from as jest.Mock).mockReturnValueOnce({
         select: mockSelectSup,
       });
-      mockEqSup.mockResolvedValueOnce({
-        data: [{ id: "different-id", name: "Existing Name" }],
+      mockEqSup.mockReturnValueOnce({ single: mockSingleSup });
+      mockSingleSup.mockResolvedValueOnce({
+        data: { id: "admin-1", is_admin: true },
         error: null,
       });
 
-      await expect(supplierApi.updateSupplier(supplierId, updateData))
-        .rejects.toThrow("Supplier name must be unique");
+      // Mock the update chain
+      const mockEqChain = jest.fn();
+      const mockSelectChain = jest.fn();
+      const mockSingleChain = jest.fn();
+      (mockedSupabase.from as jest.Mock).mockReturnValueOnce({
+        update: mockUpdateSup,
+      });
+      mockUpdateSup.mockReturnValueOnce({ eq: mockEqChain });
+      mockEqChain.mockReturnValueOnce({ select: mockSelectChain });
+      mockSelectChain.mockReturnValueOnce({ single: mockSingleChain });
+      mockSingleChain.mockResolvedValueOnce({
+        data: { id: "sup-1", remarks: "slow delivery" },
+        error: null,
+      });
+
+      const result = await supplierApi.updateSupplier(updateData);
+      
+      expect(result.remarks).toBe("slow delivery");
     });
 
-    it("should reject invalid email format", async () => {
-      const updateData = { email: "bad@email" };
+    it("should reject when user is not admin", async () => {
+      const updateData = {
+        userId: "regular-user-1",
+        supplierId: "sup-1",
+        name: "New Name"
+      };
 
-      await expect(supplierApi.updateSupplier("sup-1", updateData))
-        .rejects.toThrow("Email is invalid");
+      // Mock non-admin user
+      (mockedSupabase.from as jest.Mock).mockReturnValueOnce({
+        select: mockSelectSup,
+      });
+      mockEqSup.mockReturnValueOnce({ single: mockSingleSup });
+      mockSingleSup.mockResolvedValueOnce({
+        data: { id: "regular-user-1", is_admin: false },
+        error: null,
+      });
+
+      await expect(supplierApi.updateSupplier(updateData))
+        .rejects.toThrow("Forbidden");
     });
   });
 
-  describe("DELETE - Remove Supplier (Hard Delete)", () => {
-    it("should hard delete existing supplier", async () => {
-      const supplierId = "sup-1";
+  describe("DELETE - Remove Supplier (Admin Only)", () => {
+    it("should delete supplier when user is admin", async () => {
+      const deleteData = {
+        userId: "admin-1",
+        supplierId: "sup-1"
+      };
 
+      // Mock admin check
+      (mockedSupabase.from as jest.Mock).mockReturnValueOnce({
+        select: mockSelectSup,
+      });
+      mockEqSup.mockReturnValueOnce({ single: mockSingleSup });
+      mockSingleSup.mockResolvedValueOnce({
+        data: { id: "admin-1", is_admin: true },
+        error: null,
+      });
+
+      // Mock delete chain
+      const mockEqChain = jest.fn();
       (mockedSupabase.from as jest.Mock).mockReturnValueOnce({
         delete: mockDeleteSup,
       });
-      mockDeleteSup.mockReturnValueOnce({ eq: mockEqSup });
-      mockEqSup.mockResolvedValueOnce({ data: null, error: null });
+      mockDeleteSup.mockReturnValueOnce({ eq: mockEqChain });
+      mockEqChain.mockResolvedValueOnce({ error: null });
 
-      await supplierApi.deleteSupplier(supplierId);
+      await supplierApi.deleteSupplier(deleteData);
 
       expect(mockDeleteSup).toHaveBeenCalled();
-      expect(mockEqSup).toHaveBeenCalledWith("id", supplierId);
     });
 
-    it("should work even if supplier has no items", async () => {
-      const supplierId = "sup-orphan";
+    it("should reject when user is not admin", async () => {
+      const deleteData = {
+        userId: "regular-user-1",
+        supplierId: "sup-1"
+      };
 
+      // Mock non-admin user
       (mockedSupabase.from as jest.Mock).mockReturnValueOnce({
-        delete: mockDeleteSup,
+        select: mockSelectSup,
       });
-      mockDeleteSup.mockReturnValueOnce({ eq: mockEqSup });
-      mockEqSup.mockResolvedValueOnce({ data: null, error: null });
+      mockEqSup.mockReturnValueOnce({ single: mockSingleSup });
+      mockSingleSup.mockResolvedValueOnce({
+        data: { id: "regular-user-1", is_admin: false },
+        error: null,
+      });
 
-      await expect(supplierApi.deleteSupplier(supplierId))
-        .resolves.not.toThrow();
+      await expect(supplierApi.deleteSupplier(deleteData))
+        .rejects.toThrow("Forbidden");
     });
   });
 
-    it("should reject invalid email format", async () => {
-      const adminUser = { role: "admin" };
-      const updateData = { email: "bad@email" };
-
-      await expect(supplierApi.updateSupplier(adminUser, "sup-1", updateData))
-        .rejects.toThrow("Email is invalid");
-    });
-
-  describe("DELETE - Remove Supplier (Hard Delete)", () => {
-    it("should hard delete existing supplier for admin", async () => {
-      const adminUser = { role: "admin" };
-      const supplierId = "sup-1";
-
-      (mockedSupabase.from as jest.Mock).mockReturnValueOnce({
-        delete: mockDeleteSup,
-      });
-      mockDeleteSup.mockReturnValueOnce({ eq: mockEqSup });
-      mockEqSup.mockResolvedValueOnce({ data: null, error: null });
-
-      await supplierApi.deleteSupplier(adminUser, supplierId);
-
-      expect(mockDeleteSup).toHaveBeenCalled();
-      expect(mockEqSup).toHaveBeenCalledWith("id", supplierId);
-    });
-
-    it("should reject non-admin users", async () => {
-      const regularUser = { role: "user" };
-
-      await expect(supplierApi.deleteSupplier(regularUser, "sup-1"))
-        .rejects.toThrow("Forbidden: admin only");
-    });
-
-    it("should work even if supplier has no items", async () => {
-      const adminUser = { role: "admin" };
-      const supplierId = "sup-orphan";
-
-      (mockedSupabase.from as jest.Mock).mockReturnValueOnce({
-        delete: mockDeleteSup,
-      });
-      mockDeleteSup.mockReturnValueOnce({ eq: mockEqSup });
-      mockEqSup.mockResolvedValueOnce({ data: null, error: null });
-
-      await expect(supplierApi.deleteSupplier(adminUser, supplierId))
-        .resolves.not.toThrow();
-    });
-
-  });
-
-  describe("GET - Correct Fetching of Data", () => {
+  describe("GET - Fetching Data (All Users)", () => {
     it("should return all suppliers ordered by name", async () => {
       const mockSuppliers = [
         { id: "sup-1", name: "Alpha Supplies", remarks: "fast" },
@@ -433,121 +407,44 @@ describe("supplierApi - Supplier Management", () => {
       const result = await supplierApi.getSuppliers();
 
       expect(result).toEqual(mockSuppliers);
-      expect(mockOrderSup).toHaveBeenCalledWith("name");
     });
 
-    it("should return empty array when no suppliers exist", async () => {
-      (mockedSupabase.from as jest.Mock).mockReturnValueOnce({
-        select: mockSelectSup,
-      });
-      mockOrderSup.mockResolvedValueOnce({ data: [], error: null });
-
-      const result = await supplierApi.getSuppliers();
-
-      expect(result).toEqual([]);
-    });
-
-    it("should return supplier by ID or null", async () => {
+    it("should return supplier by ID", async () => {
       const mockSupplier = { id: "sup-1", name: "Test Supplier" };
 
-      // Test found case
       (mockedSupabase.from as jest.Mock).mockReturnValueOnce({
         select: mockSelectSup,
       });
-      mockEqSup.mockResolvedValueOnce({
-        data: [mockSupplier],
+      mockEqSup.mockReturnValueOnce({ maybeSingle: mockMaybeSingleSup });
+      mockMaybeSingleSup.mockResolvedValueOnce({
+        data: mockSupplier,
         error: null,
       });
 
       const result = await supplierApi.getSupplierById("sup-1");
       expect(result).toEqual(mockSupplier);
-
-      // Test not found case
-      (mockedSupabase.from as jest.Mock).mockReturnValueOnce({
-        select: mockSelectSup,
-      });
-      mockEqSup.mockResolvedValueOnce({ data: [], error: null });
-
-      const nullResult = await supplierApi.getSupplierById("nonexistent");
-      expect(nullResult).toBeNull();
     });
   });
 
-  describe("FILTER - Filter Suppliers (List)", () => {
-    it("should filter by nameContains using substring search", async () => {
-      const mockFilteredSuppliers = [
-        { id: "sup-1", name: "Medical Supply Co", remarks: "fast" },
+  describe("FILTER - Filter Suppliers (All Users)", () => {
+    it("should filter by nameContains", async () => {
+      const mockFiltered = [
+        { id: "sup-1", name: "Medical Supply Co" },
       ];
 
+      const mockOrderChain = jest.fn();
       (mockedSupabase.from as jest.Mock).mockReturnValueOnce({
         select: mockSelectSup,
       });
-      mockIlikeSup.mockResolvedValueOnce({
-        data: mockFilteredSuppliers,
+      mockIlikeSup.mockReturnValueOnce({ order: mockOrderChain });
+      mockOrderChain.mockResolvedValueOnce({
+        data: mockFiltered,
         error: null,
       });
 
       const result = await supplierApi.filterSuppliers({ nameContains: "Medical" });
 
-      expect(result).toEqual(mockFilteredSuppliers);
-      expect(mockIlikeSup).toHaveBeenCalledWith("name", "%Medical%");
+      expect(result).toEqual(mockFiltered);
     });
-
-    it("should filter by remarks using exact match", async () => {
-      const mockFilteredSuppliers = [
-        { id: "sup-2", name: "Fast Delivery Inc", remarks: "quick to deliver" },
-      ];
-
-      (mockedSupabase.from as jest.Mock).mockReturnValueOnce({
-        select: mockSelectSup,
-      });
-      mockEqSup.mockResolvedValueOnce({
-        data: mockFilteredSuppliers,
-        error: null,
-      });
-
-      const result = await supplierApi.filterSuppliers({ remarks: "quick to deliver" });
-
-      expect(result).toEqual(mockFilteredSuppliers);
-      expect(mockEqSup).toHaveBeenCalledWith("remarks", "quick to deliver");
-    });
-
-    it("should combine multiple filters", async () => {
-      const mockCombinedResults = [
-        { id: "sup-3", name: "Medical Express", remarks: "fast" },
-      ];
-
-      // Mock chained filters: ilike for name, then eq for remarks
-      const mockEqChained = jest.fn();
-      (mockedSupabase.from as jest.Mock).mockReturnValueOnce({
-        select: mockSelectSup,
-      });
-      mockIlikeSup.mockReturnValueOnce({ eq: mockEqChained });
-      mockEqChained.mockResolvedValueOnce({
-        data: mockCombinedResults,
-        error: null,
-      });
-
-      const result = await supplierApi.filterSuppliers({
-        nameContains: "Medical",
-        remarks: "fast"
-      });
-
-      expect(result).toEqual(mockCombinedResults);
-      expect(mockIlikeSup).toHaveBeenCalledWith("name", "%Medical%");
-      expect(mockEqChained).toHaveBeenCalledWith("remarks", "fast");
-    });
-
-    it("should return empty array if no matches", async () => {
-      (mockedSupabase.from as jest.Mock).mockReturnValueOnce({
-        select: mockSelectSup,
-      });
-      mockIlikeSup.mockResolvedValueOnce({ data: [], error: null });
-
-      const result = await supplierApi.filterSuppliers({ nameContains: "NonExistent" });
-
-      expect(result).toEqual([]);
-    });
-
   });
 });

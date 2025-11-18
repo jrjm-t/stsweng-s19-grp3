@@ -1482,7 +1482,7 @@ export const inventoryApi = {
 
 // ===== VALIDATION HELPER FOR EMAIL =====
 function validateEmail(email: string | undefined | null, required = false) {
-  if (!email && !required) return; // Optional and not provided
+  if (!email && !required) return;
   
   if (required && (!email || email.trim() === "")) {
     throw new ApiError("Email is required", 400, "BAD_REQUEST");
@@ -1496,8 +1496,20 @@ function validateEmail(email: string | undefined | null, required = false) {
   }
 }
 
+// ===== AUTHORIZATION HELPER =====
+function requireAdmin(userId: string) {
+  // This checks if the user is an admin
+  // You'll need to implement this based on your user system
+  return supabase
+    .from("users")
+    .select("is_admin")
+    .eq("id", userId)
+    .single();
+}
+
 // ===== SUPPLIER INTERFACES =====
 export interface CreateSupplierRequest {
+  userId: string; // ADD: User performing the action
   name: string;
   phone?: string | null;
   email?: string | null;
@@ -1505,10 +1517,17 @@ export interface CreateSupplierRequest {
 }
 
 export interface UpdateSupplierRequest {
+  userId: string; // ADD: User performing the action
+  supplierId: string; // ADD: Which supplier to update
   name?: string;
   phone?: string | null;
   email?: string | null;
   remarks?: string | null;
+}
+
+export interface DeleteSupplierRequest {
+  userId: string; // ADD: User performing the action
+  supplierId: string; // ADD: Which supplier to delete
 }
 
 export interface SupplierFilterOptions {
@@ -1521,7 +1540,77 @@ export const supplierApi = {
    * Create a new supplier
    */
   async createSupplier(data: CreateSupplierRequest) {
+    validateString(data.userId, "userId");
     
+    // Check if user is admin
+    const { data: user, error: userError } = await requireAdmin(data.userId);
+    if (userError || !user) {
+      logger.error(`User not found: ${data.userId}`);
+      throw new ApiError("User not found", 404, "USER_NOT_FOUND");
+    }
+    if (!user.is_admin) {
+      logger.error(`Forbidden: User ${data.userId} is not an admin`);
+      throw new ApiError("Forbidden: Admin access required", 403, "FORBIDDEN");
+    }
+
+    // Validate supplier data
+    validateString(data.name, "Supplier name", true);
+    if (data.name.trim() === "") {
+      throw new ApiError("Supplier name is required", 400, "BAD_REQUEST");
+    }
+
+    validateEmail(data.email, false);
+
+    if (data.phone !== undefined && data.phone !== null) {
+      validateString(data.phone, "Phone number", false);
+    }
+
+    if (data.remarks !== undefined && data.remarks !== null) {
+      validateString(data.remarks, "Remarks", false);
+    }
+
+    logger.info(`Admin ${data.userId} creating supplier: ${data.name}`);
+
+    // Check for duplicate name
+    const { data: existing, error: checkError } = await supabase
+      .from("suppliers")
+      .select("id")
+      .eq("name", data.name)
+      .maybeSingle();
+
+    if (checkError) {
+      logger.error(`Error checking for existing supplier: ${checkError.message}`);
+      throw checkError;
+    }
+
+    if (existing) {
+      logger.error(`Supplier name conflict: ${data.name} already exists`);
+      throw new ApiError(
+        "Supplier name must be unique",
+        400,
+        "DUPLICATE_SUPPLIER_NAME"
+      );
+    }
+
+    // Create supplier
+    const { data: supplier, error: insertError } = await supabase
+      .from("suppliers")
+      .insert({
+        name: data.name,
+        phone_number: data.phone || null,
+        email: data.email || null,
+        remarks: data.remarks || null,
+      })
+      .select()
+      .single();
+
+    if (insertError) {
+      logger.error(`Failed to create supplier: ${insertError.message}`);
+      throw insertError;
+    }
+
+    logger.success(`Supplier created with ID: ${supplier.id} by admin ${data.userId}`);
+    return supplier;
   },
 
   /**
@@ -1539,19 +1628,22 @@ export const supplierApi = {
   },
 
   /**
-   * Update an existing supplier
+   * Update an existing supplier (Admin only)
    */
-  async updateSupplier(id: string, updates: UpdateSupplierRequest) {
+  async updateSupplier(data: UpdateSupplierRequest) {
     
   },
 
   /**
-   * Delete a supplier (hard delete)
+   * Delete a supplier (Admin only)
    */
-  async deleteSupplier(id: string) {
+  async deleteSupplier(data: DeleteSupplierRequest) {
   },
 
-  async filterSuppliers(options: SupplierFilterOptions) {
+  /**
+   * Filter suppliers (Available to all authenticated users)
+   */
+  async filterSuppliers(filters: SupplierFilterOptions = {}) {
     // Implementation for filtering suppliers
   },
 
