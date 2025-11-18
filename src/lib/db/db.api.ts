@@ -156,12 +156,14 @@ const STOCK_FILTERS = ["all", "deleted", "active"] as const;
 
 export interface CreateItemRequest {
   name: string;
+  supplierId?: string;
   initialStock?: {
     lotId: string;
     quantity: number;
     expiryDate?: string;
     userId: string;
-    unitPrice?: number; //ADD: unit price field
+    unitPrice?: number;
+    supplierId?: string;
   };
 }
 
@@ -219,6 +221,11 @@ export const inventoryApi = {
         );
       }
     }
+    // Validate supplierId if provided
+    if (data.supplierId !== undefined && data.supplierId !== null) {
+      validateString(data.supplierId, "supplierId", false);
+    }
+
     logger.info(`Creating item: ${data.name}`);
 
     const { data: item, error: itemError } = await supabase
@@ -239,12 +246,16 @@ export const inventoryApi = {
         `Creating new lot ${data.initialStock.lotId} for item ${item.name}`
       );
 
+      // Use supplierId from initialStock if provided, otherwise use item-level supplierId
+      const finalSupplierId = data.initialStock.supplierId || data.supplierId || null;
+
       const { error: stockError } = await supabase.from("item_stocks").insert({
         item_id: item.id,
         lot_id: data.initialStock.lotId,
         item_qty: 0,
         expiry_date: data.initialStock.expiryDate || null,
-        unit_price: data.initialStock.unitPrice || null //ADD: unit price field
+        unit_price: data.initialStock.unitPrice || null, 
+        supplier_id: finalSupplierId,
       });
 
       if (stockError) {
@@ -286,7 +297,15 @@ export const inventoryApi = {
           expiry_date,
           updated_at,
           is_deleted,
-          unit_price
+          unit_price,
+          supplier_id,
+          suppliers (
+            id,
+            name,
+            phone_number,
+            email,
+            remarks
+          )
         )
       `
       )
@@ -337,7 +356,15 @@ export const inventoryApi = {
           expiry_date,
           updated_at,
           is_deleted,
-          unit_price
+          unit_price,
+          supplier_id,
+          suppliers (
+            id,
+            name,
+            phone_number,
+            email,
+            remarks
+          )
         )
       `
       )
@@ -973,7 +1000,16 @@ export const inventoryApi = {
     logger.info(`Fetching items with stock <= ${threshold}`);
     const { data, error } = await supabase
       .from("item_stocks")
-      .select(`*, items ( name )`)
+      .select(`
+        *, 
+        items ( name ),
+        suppliers (
+          id,
+          name,
+          phone_number,
+          email
+        )
+      `)
       .lte("item_qty", threshold)
       .eq("is_deleted", false) // 👈 Exclude soft-deleted
       .order("item_qty", { ascending: true });
@@ -999,7 +1035,16 @@ export const inventoryApi = {
 
     const { data, error } = await supabase
       .from("item_stocks")
-      .select(`*, items ( name )`)
+      .select(`
+        *,
+        items ( name ),
+        suppliers (
+          id,
+          name,
+          phone_number,
+          email
+        )
+      `)
       .not("expiry_date", "is", null)
       .gte("expiry_date", todayStr)
       .lte("expiry_date", futureStr)
@@ -1024,7 +1069,16 @@ export const inventoryApi = {
 
     const { data, error } = await supabase
       .from("item_stocks")
-      .select(`*, items ( name )`)
+      .select(`
+        *,
+        items ( name ),
+        suppliers (
+          id,
+          name,
+          phone_number,
+          email
+        )
+      `)
       .not("expiry_date", "is", null)
       .lt("expiry_date", todayStr)
       .eq("is_deleted", false) // 👈 Exclude soft-deleted
@@ -1435,17 +1489,22 @@ export const inventoryApi = {
 
     let query = supabase
       .from("item_stocks")
-      .select(
-        `
-      *,
-      items (
-        id,
-        name,
-        created_at,
-        updated_at
-      )
-    `
-      )
+      .select(`
+        *,
+        items (
+          id,
+          name,
+          created_at,
+          updated_at
+        ),
+        suppliers (
+          id,
+          name,
+          phone_number,
+          email,
+          remarks
+        )
+      `)
       .in("lot_id", lotIds)
       .order("items(name)", { ascending: true });
 
@@ -1469,13 +1528,374 @@ export const inventoryApi = {
       return [];
     }
 
-    // Rename "items" field to "item" for consistency
-    const itemDetails = data.map(({ items, ...stock }) => ({
+    const itemDetails = data.map(({ items, suppliers, ...stock }) => ({
       ...stock,
       item: items,
+      supplier: suppliers,
     }));
 
     logger.success(`Fetched ${itemDetails.length} detailed item information`);
     return itemDetails;
+  },
+};
+
+// ===== VALIDATION HELPER FOR EMAIL =====
+function validateEmail(email: string | undefined | null, required = false) {
+  if (!email && !required) return;
+  
+  if (required && (!email || email.trim() === "")) {
+    throw new ApiError("Email is required", 400, "BAD_REQUEST");
+  }
+  
+  if (email) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      throw new ApiError("Email is invalid", 400, "BAD_REQUEST");
+    }
+  }
+}
+
+// ===== AUTHORIZATION HELPER =====
+function requireAdmin(userId: string) {
+  // This checks if the user is an admin
+  // You'll need to implement this based on your user system
+  return supabase
+    .from("users")
+    .select("is_admin")
+    .eq("id", userId)
+    .single();
+}
+
+// ===== SUPPLIER INTERFACES =====
+export interface CreateSupplierRequest {
+  userId: string; // ADD: User performing the action
+  name: string;
+  phone?: string | null;
+  email?: string | null;
+  remarks?: string | null;
+}
+
+export interface UpdateSupplierRequest {
+  userId: string; // ADD: User performing the action
+  supplierId: string; // ADD: Which supplier to update
+  name?: string;
+  phone?: string | null;
+  email?: string | null;
+  remarks?: string | null;
+}
+
+export interface DeleteSupplierRequest {
+  userId: string; // ADD: User performing the action
+  supplierId: string; // ADD: Which supplier to delete
+}
+
+export interface SupplierFilterOptions {
+  nameContains?: string;
+  remarks?: string;
+}
+
+export const supplierApi = {
+  /**
+   * Create a new supplier
+   */
+  async createSupplier(data: CreateSupplierRequest) {
+    validateString(data.userId, "userId");
+    
+    // Check if user is admin
+    const { data: user, error: userError } = await requireAdmin(data.userId);
+    if (userError || !user) {
+      logger.error(`User not found: ${data.userId}`);
+      throw new ApiError("User not found", 404, "USER_NOT_FOUND");
+    }
+    if (!user.is_admin) {
+      logger.error(`Forbidden: User ${data.userId} is not an admin`);
+      throw new ApiError("Forbidden: Admin access required", 403, "FORBIDDEN");
+    }
+
+    // Validate supplier data
+    validateString(data.name, "Supplier name", true);
+    if (data.name.trim() === "") {
+      throw new ApiError("Supplier name is required", 400, "BAD_REQUEST");
+    }
+
+    validateEmail(data.email, false);
+
+    if (data.phone !== undefined && data.phone !== null) {
+      validateString(data.phone, "Phone number", false);
+    }
+
+    if (data.remarks !== undefined && data.remarks !== null) {
+      validateString(data.remarks, "Remarks", false);
+    }
+
+    logger.info(`Admin ${data.userId} creating supplier: ${data.name}`);
+
+    // Check for duplicate name
+    const { data: existing, error: checkError } = await supabase
+      .from("suppliers")
+      .select("id")
+      .eq("name", data.name)
+      .maybeSingle();
+
+    if (checkError) {
+      logger.error(`Error checking for existing supplier: ${checkError.message}`);
+      throw checkError;
+    }
+
+    if (existing) {
+      logger.error(`Supplier name conflict: ${data.name} already exists`);
+      throw new ApiError(
+        "Supplier name must be unique",
+        400,
+        "DUPLICATE_SUPPLIER_NAME"
+      );
+    }
+
+    // Create supplier
+    const { data: supplier, error: insertError } = await supabase
+      .from("suppliers")
+      .insert({
+        name: data.name,
+        phone_number: data.phone || null,
+        email: data.email || null,
+        remarks: data.remarks || null,
+      })
+      .select()
+      .single();
+
+    if (insertError) {
+      logger.error(`Failed to create supplier: ${insertError.message}`);
+      throw insertError;
+    }
+
+    logger.success(`Supplier created with ID: ${supplier.id} by admin ${data.userId}`);
+    return supplier;
+  },
+
+  /**
+   * Get all suppliers (Available to all authenticated users)
+   */
+  async getSuppliers() {
+    logger.info("Fetching all suppliers");
+
+    const { data, error } = await supabase
+      .from("suppliers")
+      .select("*")
+      .order("name");
+
+    if (error) {
+      logger.error(`Failed to fetch suppliers: ${error.message}`);
+      throw error;
+    }
+
+    logger.success(`Fetched ${data?.length || 0} suppliers`);
+    return data || [];
+  },
+
+  /**
+   * Get a single supplier by ID (Available to all authenticated users)
+   */
+  async getSupplierById(id: string) {
+    validateString(id, "Supplier ID");
+    logger.info(`Fetching supplier with ID: ${id}`);
+
+    const { data, error } = await supabase
+      .from("suppliers")
+      .select("*")
+      .eq("id", id)
+      .maybeSingle();
+
+    if (error) {
+      logger.error(`Failed to fetch supplier: ${error.message}`);
+      throw error;
+    }
+
+    if (!data) {
+      logger.info(`Supplier not found: ${id}`);
+      return null;
+    }
+
+    logger.success(`Fetched supplier: ${data.name}`);
+    return data;
+  },
+
+  /**
+   * Update an existing supplier (Admin only)
+   */
+  async updateSupplier(data: UpdateSupplierRequest) {
+    validateString(data.userId, "userId");
+    validateString(data.supplierId, "supplierId");
+    
+    // Check if user is admin
+    const { data: user, error: userError } = await requireAdmin(data.userId);
+    if (userError || !user) {
+      logger.error(`User not found: ${data.userId}`);
+      throw new ApiError("User not found", 404, "USER_NOT_FOUND");
+    }
+    if (!user.is_admin) {
+      logger.error(`Forbidden: User ${data.userId} is not an admin`);
+      throw new ApiError("Forbidden: Admin access required", 403, "FORBIDDEN");
+    }
+
+    logger.info(`Admin ${data.userId} updating supplier: ${data.supplierId}`);
+
+    // Validate fields if provided
+    if (data.name !== undefined) {
+      validateString(data.name, "Supplier name", false);
+      if (data.name && data.name.trim() === "") {
+        throw new ApiError("Supplier name cannot be empty", 400, "BAD_REQUEST");
+      }
+
+      // Check for duplicate name (excluding current supplier)
+      const { data: existing, error: checkError } = await supabase
+        .from("suppliers")
+        .select("id")
+        .eq("name", data.name)
+        .neq("id", data.supplierId)
+        .maybeSingle();
+
+      if (checkError) {
+        logger.error(`Error checking for existing supplier: ${checkError.message}`);
+        throw checkError;
+      }
+
+      if (existing) {
+        logger.error(`Supplier name conflict: ${data.name} already exists`);
+        throw new ApiError(
+          "Supplier name must be unique",
+          400,
+          "DUPLICATE_SUPPLIER_NAME"
+        );
+      }
+    }
+
+    if (data.email !== undefined) {
+      validateEmail(data.email, false);
+    }
+
+    if (data.phone !== undefined && data.phone !== null) {
+      validateString(data.phone, "Phone number", false);
+    }
+
+    if (data.remarks !== undefined && data.remarks !== null) {
+      validateString(data.remarks, "Remarks", false);
+    }
+
+    // Prepare update object
+    const updateData: any = {};
+    if (data.name !== undefined) updateData.name = data.name;
+    if (data.phone !== undefined) updateData.phone_number = data.phone;
+    if (data.email !== undefined) updateData.email = data.email;
+    if (data.remarks !== undefined) updateData.remarks = data.remarks;
+
+    // Perform update
+    const { data: result, error } = await supabase
+      .from("suppliers")
+      .update(updateData)
+      .eq("id", data.supplierId)
+      .select()
+      .single();
+
+    if (error) {
+      logger.error(`Failed to update supplier: ${error.message}`);
+      throw error;
+    }
+
+    logger.success(`Supplier updated: ${result.name} by admin ${data.userId}`);
+    return result;
+  },
+
+  /**
+   * Delete a supplier (Admin only)
+   */
+  async deleteSupplier(data: DeleteSupplierRequest) {
+    validateString(data.userId, "userId");
+    validateString(data.supplierId, "supplierId");
+    
+    // Check if user is admin
+    const { data: user, error: userError } = await requireAdmin(data.userId);
+    if (userError || !user) {
+      logger.error(`User not found: ${data.userId}`);
+      throw new ApiError("User not found", 404, "USER_NOT_FOUND");
+    }
+    if (!user.is_admin) {
+      logger.error(`Forbidden: User ${data.userId} is not an admin`);
+      throw new ApiError("Forbidden: Admin access required", 403, "FORBIDDEN");
+    }
+
+    logger.info(`Admin ${data.userId} deleting supplier: ${data.supplierId}`);
+
+    const { error } = await supabase
+      .from("suppliers")
+      .delete()
+      .eq("id", data.supplierId);
+
+    if (error) {
+      logger.error(`Failed to delete supplier: ${error.message}`);
+      throw error;
+    }
+
+    logger.success(`Supplier deleted successfully by admin ${data.userId}`);
+    return true;
+  },
+
+  /**
+   * Filter suppliers (Available to all authenticated users)
+   */
+  async filterSuppliers(filters: SupplierFilterOptions = {}) {
+    logger.info(`Filtering suppliers with: ${JSON.stringify(filters)}`);
+
+    let query = supabase.from("suppliers").select("*");
+
+    if (filters.nameContains) {
+      validateString(filters.nameContains, "Name filter", false);
+      query = query.ilike("name", `%${filters.nameContains}%`);
+    }
+
+    if (filters.remarks) {
+      validateString(filters.remarks, "Remarks filter", false);
+      query = query.eq("remarks", filters.remarks);
+    }
+
+    const { data, error } = await query.order("name");
+
+    if (error) {
+      logger.error(`Failed to filter suppliers: ${error.message}`);
+      throw error;
+    }
+
+    logger.success(`Found ${data?.length || 0} suppliers matching filters`);
+    return data || [];
+  },
+
+  /**
+   * Get all items associated with a supplier (Available to all authenticated users)
+   */
+  async getSupplierItems(supplierId: string) {
+    validateString(supplierId, "Supplier ID");
+    logger.info(`Fetching items for supplier: ${supplierId}`);
+
+    const { data, error } = await supabase
+      .from("item_stocks")
+      .select(`
+        *,
+        items (
+          id,
+          name,
+          created_at,
+          updated_at
+        )
+      `)
+      .eq("supplier_id", supplierId)
+      .eq("is_deleted", false)
+      .order("items(name)");
+
+    if (error) {
+      logger.error(`Failed to fetch supplier items: ${error.message}`);
+      throw error;
+    }
+
+    logger.success(`Found ${data?.length || 0} items for supplier`);
+    return data || [];
   },
 };
