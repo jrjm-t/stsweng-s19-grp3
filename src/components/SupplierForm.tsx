@@ -4,8 +4,8 @@ import Select from "react-select";
 import Input from "./General/Input";
 import Button from "./General/Button";
 import Toast from "./General/Toast";
-// import { supplierApi } from "../api/supplierApi"; // to be implemented
-import { useAuth } from "../lib/db/db.auth"; // not sure about this import
+import { supplierApi } from "../lib/db/db.api";
+import { useAuth } from "../lib/db/db.auth";
 
 interface SupplierFormProps {
   mode: "add" | "edit" | "delete";
@@ -31,11 +31,19 @@ function SupplierForm({ mode }: SupplierFormProps) {
   const isDelete = mode === "delete";
 
   const fetchSuppliers = async () => {
-    // const data = await supplierApi.getAllSuppliers();
-    // setAllSuppliers(data);
-    // setSupplierOptions(
-    //   data.map((s: any) => ({ value: s.name, label: s.name }))
-    // );
+    try {
+      const data = await supplierApi.getSuppliers();
+      setAllSuppliers(data);
+      setSupplierOptions(
+        data.map((s: any) => ({ value: s.id, label: s.name }))
+      );
+    } catch (error) {
+      console.error("Failed to fetch suppliers:", error);
+      setToast({ 
+        message: "Failed to load suppliers", 
+        type: "error" 
+      });
+    }
   };
 
   useEffect(() => {
@@ -71,10 +79,13 @@ function SupplierForm({ mode }: SupplierFormProps) {
       if (isAdd) {
         if (!form.name) throw new Error("Supplier name is required.");
 
-        // await supplierApi.createSupplier({
-        //  ...form,
-        //  userId: user.id,
-        //});
+        await supplierApi.createSupplier({
+          userId: user.id,
+          name: form.name,
+          phone: form.phoneNumber || null,
+          email: form.emailAddress || null,
+          remarks: form.remarks || null,
+        });
 
         setToast({ message: "Supplier added successfully.", type: "success" });
       }
@@ -83,11 +94,14 @@ function SupplierForm({ mode }: SupplierFormProps) {
         const selected = allSuppliers.find((s) => s.name === form.name);
         if (!selected) throw new Error("Supplier does not exist.");
 
-        //await supplierApi.updateSupplier({
-        //  supplierId: selected.id,
-        //  ...form,
-        //  userId: user.id,
-        //});
+        await supplierApi.updateSupplier({
+          userId: user.id,
+          supplierId: selected.id,
+          name: form.name,
+          phone: form.phoneNumber || null,
+          email: form.emailAddress || null,
+          remarks: form.remarks || null,
+        });
 
         setToast({ message: "Supplier updated.", type: "success" });
       }
@@ -96,10 +110,10 @@ function SupplierForm({ mode }: SupplierFormProps) {
         const selected = allSuppliers.find((s) => s.name === form.name);
         if (!selected) throw new Error("Supplier not found.");
 
-        // await supplierApi.deleteSupplier({
-        //  supplierId: selected.id,
-        //  userId: user.id,
-        // });
+        await supplierApi.deleteSupplier({
+          userId: user.id,
+          supplierId: selected.id,
+        });
 
         setToast({ message: "Supplier deleted.", type: "success" });
       }

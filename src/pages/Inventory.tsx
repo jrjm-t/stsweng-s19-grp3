@@ -60,8 +60,9 @@ function Inventory() {
           result = lowStocks.map((stock: any) => ({
             name: stock.items.name,
             lotId: stock.lot_id,
+            supplierName: stock.suppliers?.name || "N/A",
             qty: stock.item_qty,
-            unitPrice: stock.unit_price?.toFixed(2) || "0.00", //ADD: unit price field
+            unitPrice: stock.unit_price?.toFixed(2) || "0.00",
             totalPrice: (
               (stock.item_qty || 0) * (stock.unit_price || 0)
             ).toFixed(2), //ADD: total price field
@@ -75,11 +76,12 @@ function Inventory() {
           result = expiringStocks.map((stock: any) => ({
             name: stock.items.name,
             lotId: stock.lot_id,
+            supplierName: stock.suppliers?.name || "N/A",
             qty: stock.item_qty,
             unitPrice: stock.unit_price?.toFixed(2) || "0.00", //ADD: unit price field
             totalPrice: (
               (stock.item_qty || 0) * (stock.unit_price || 0)
-            ).toFixed(2), //ADD: total price field
+            ).toFixed(2),
             expDate: stock.expiry_date?.split("T")[0] || "N/A",
             lastModified: stock.updated_at?.split("T")[0] || "N/A",
             lastModifiedRaw: stock.updated_at || "",
@@ -90,6 +92,7 @@ function Inventory() {
           result = expiredStocks.map((stock: any) => ({
             name: stock.items.name,
             lotId: stock.lot_id,
+            supplierName: stock.suppliers?.name || "N/A",
             qty: stock.item_qty,
             unitPrice: stock.unit_price?.toFixed(2) || "0.00", //ADD: unit price field
             totalPrice: (
@@ -108,12 +111,12 @@ function Inventory() {
               .map((stock: any) => ({
                 name: item.name,
                 lotId: stock.lot_id,
-                supplier: stock.supplier || "N/A", //ADD: supplier name field when API available.
+                supplierName: stock.suppliers?.name || "N/A",
                 qty: stock.item_qty,
-                unitPrice: stock.unit_price?.toFixed(2) || "0.00", //ADD: unit price field
+                unitPrice: stock.unit_price?.toFixed(2) || "0.00",
                 totalPrice: (
                   (stock.item_qty || 0) * (stock.unit_price || 0)
-                ).toFixed(2), //ADD: total price field
+                ).toFixed(2),
                 expDate: stock.expiry_date?.split("T")[0] || "N/A",
                 lastModified: stock.updated_at?.split("T")[0] || "N/A",
                 lastModifiedRaw: stock.updated_at || "",
@@ -195,9 +198,10 @@ function Inventory() {
             () => ({
               name: "",
               lotId: "",
+              supplierName: "",
               qty: "",
-              unitPrice: "", //ADD: unit price field
-              totalPrice: "", //ADD: total price field
+              unitPrice: "",
+              totalPrice: "", 
               expDate: "",
               lastModified: "",
               action: "",

@@ -581,23 +581,29 @@ export const inventoryApi = {
     userId,
     quantity,
     unitPrice,
+    supplierId
   }: {
     itemId: string;
     lotId: string;
     expiryDate?: string;
     userId: string;
     quantity: number;
-    unitPrice?: number //ADD: unit price field
+    unitPrice?: number;
+    supplierId?: string;
   }) {
     validateString(itemId, "itemId");
     validateString(lotId, "lotId");
     if (expiryDate !== undefined) validateDate(expiryDate, "expiryDate", false);
     validateString(userId, "userId");
     validateNumber(quantity, "quantity", { min: 1, integer: true });
-    //ADD: unit price validation
+    
     if(unitPrice !== undefined){
       validateNumber(unitPrice, "unitPrice", { min: 0 }, false);
     }
+    if (supplierId !== undefined && supplierId !== null) {
+      validateString(supplierId, "supplierId", false);
+    }
+
     logger.info(`Creating new lot ${lotId} for item ID ${itemId}`);
 
     const { error: stockError } = await supabase.from("item_stocks").insert({
@@ -605,7 +611,8 @@ export const inventoryApi = {
       lot_id: lotId,
       item_qty: 0,
       expiry_date: expiryDate || null,
-      unit_price: unitPrice || null //ADD: unit price field
+      unit_price: unitPrice || null,
+      supplier_id: supplierId || null,
     });
 
     if (stockError) {

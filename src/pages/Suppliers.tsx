@@ -2,8 +2,7 @@ import React, { use, useEffect, useState } from "react";
 import SupplierTable from "../components/Supplier/SupplierTable";
 import Button from "../components/General/Button";
 import SupplierCard from "../components/Supplier/SupplierCard";
-//import { getSuppliers } from "../api/supplierApi";
-//import { Supplier } from "../types/Supplier";
+import { supplierApi } from "../lib/db/db.api";
 import { useSearch } from "../contexts/SearchContext";
 
 const columns = [
@@ -26,9 +25,16 @@ function Suppliers() {
     const fetchSuppliers = async () => {
       setLoading(true);
       try {
-        // under assumption API exists
-        //const suppliers = await suppliersApi.getSuppliers();
-        //setRawData(suppliers);
+        const suppliers = await supplierApi.getSuppliers();
+        
+        // Transform the data to match the expected format
+        const formattedSuppliers = suppliers.map((supplier: any) => ({
+          name: supplier.name,
+          phoneNumber: supplier.phone_number || "N/A",
+          emailAddress: supplier.email || "N/A",
+          remarks: supplier.remarks || "N/A",
+        }));
+        setRawData(formattedSuppliers);
       } catch (error) {
         console.error("Error fetching suppliers:", error);
       } finally {

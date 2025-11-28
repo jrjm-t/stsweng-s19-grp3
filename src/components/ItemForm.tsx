@@ -5,7 +5,7 @@ import Select from "react-select";
 import Input from "./General/Input";
 import Button from "./General/Button";
 import Toast from "./General/Toast";
-import { inventoryApi } from "../lib/db/db.api";
+import { inventoryApi, supplierApi } from "../lib/db/db.api";
 import { useAuth } from "../lib/db/db.auth";
 
 interface ItemFormProps {
@@ -22,6 +22,7 @@ function ItemForm({ mode }: ItemFormProps) {
     newItem: "",
     newLotId: "",
     unitPrice: "",
+    supplierId: "",
   });
 
   const [itemOptions, setItemOptions] = useState<
@@ -30,6 +31,10 @@ function ItemForm({ mode }: ItemFormProps) {
   const [lotOptions, setLotOptions] = useState<
     { value: string; label: string }[]
   >([]);
+const [supplierOptions, setSupplierOptions] = useState<
+  { value: string; label: string }[]
+>([]);
+
   const [allItems, setAllItems] = useState<any[]>([]);
   const [toast, setToast] = useState<{
     message: string;
@@ -56,6 +61,20 @@ function ItemForm({ mode }: ItemFormProps) {
   useEffect(() => {
     fetchAndSyncItems();
   }, []);
+
+  useEffect(() => {
+  const fetchSuppliers = async () => {
+    try {
+      const suppliers = await supplierApi.getSuppliers();
+      setSupplierOptions(
+        suppliers.map((s: any) => ({ value: s.id, label: s.name }))
+      );
+    } catch (error) {
+      console.error("Failed to fetch suppliers:", error);
+    }
+  };
+  fetchSuppliers();
+}, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -118,6 +137,11 @@ function ItemForm({ mode }: ItemFormProps) {
     }
   };
 
+  const handleSupplierChange = (newValue: any) => {
+    const supplierId = newValue?.value || "";
+    setForm((prev) => ({ ...prev, supplierId }));
+  };
+
   const resetForm = () => {
     setForm({
       item: "",
@@ -127,6 +151,7 @@ function ItemForm({ mode }: ItemFormProps) {
       newItem: "",
       newLotId: "",
       unitPrice: "",
+      supplierId: "",
     });
     setLotOptions([]);
     setDisableExpDate(false);
@@ -153,12 +178,14 @@ function ItemForm({ mode }: ItemFormProps) {
         if (isNewItem) {
           await inventoryApi.createItem({
             name: form.item,
+            supplierId: form.supplierId || undefined,
             initialStock: {
               userId: user.id,
               lotId: form.lotId,
               quantity: Number(form.quantity),
               expiryDate: form.expDate || undefined,
-              unitPrice: Number(form.unitPrice) || 0, // ADD: unit price field
+              unitPrice: Number(form.unitPrice) || 0,
+              supplierId: form.supplierId || undefined,
             },
           });
           setToast({ message: "New item and stock added.", type: "success" });
@@ -169,7 +196,8 @@ function ItemForm({ mode }: ItemFormProps) {
             quantity: Number(form.quantity),
             userId: user.id,
             expiryDate: form.expDate || undefined,
-            unitPrice: Number(form.unitPrice) || 0, // ADD: unit price field
+            unitPrice: Number(form.unitPrice) || 0,
+            supplierId: form.supplierId || undefined,
           });
           setToast({
             message: "New lot added to existing item.",
@@ -402,6 +430,26 @@ function ItemForm({ mode }: ItemFormProps) {
               min="0"
             />
 
+            <div className="w-full">
+              <label className="block text-xs font-bold font-Work-Sans text-black mb-1">
+                Supplier (Optional)
+              </label>
+              <Select
+                isClearable
+                name="supplier"
+                options={supplierOptions}
+                onChange={handleSupplierChange}
+                className="text-sm"
+                classNamePrefix="select"
+                placeholder="Select a supplier"
+                value={
+                  form.supplierId
+                    ? supplierOptions.find((opt) => opt.value === form.supplierId)
+                    : null
+                }
+              />
+            </div>
+
             <Input
               label="Expiration Date (Optional)"
               id="expDate"
@@ -545,6 +593,26 @@ function ItemForm({ mode }: ItemFormProps) {
             step="0.01"
             min="0"
           />
+
+          <div className="w-full">
+            <label className="block text-xs font-bold font-Work-Sans text-black mb-1">
+              Supplier (Optional)
+            </label>
+            <Select
+              isClearable
+              name="supplier"
+              options={supplierOptions}
+              onChange={handleSupplierChange}
+              className="text-sm"
+              classNamePrefix="select"
+              placeholder="Select a supplier"
+              value={
+                form.supplierId
+                  ? supplierOptions.find((opt) => opt.value === form.supplierId)
+                  : null
+              }
+            />
+          </div>
 
           <Input
             label="Expiration Date (Optional)"
