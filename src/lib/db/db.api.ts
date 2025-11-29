@@ -469,6 +469,7 @@ export const inventoryApi = {
     quantity,
     expiryDate,
     unitPrice,
+    supplierId,
     userId,
   }: {
     itemId: string;
@@ -476,8 +477,9 @@ export const inventoryApi = {
     newItemName?: string;
     newLotId?: string;
     quantity?: number;
-    expiryDate?: string | null; // <-- allow null here
-    unitPrice?: number; //ADD: unit price field
+    expiryDate?: string | null;
+    unitPrice?: number;
+    supplierId?: string | null;
     userId: string;
   }) {
     validateString(itemId, "itemId");
@@ -489,7 +491,10 @@ export const inventoryApi = {
       validateNumber(quantity, "quantity", { min: 1, integer: true }, false);
     if (expiryDate !== undefined) validateDate(expiryDate, "expiryDate", false);
     validateString(userId, "userId");
-    if (unitPrice !== undefined) validateNumber(unitPrice, "unitPrice", { min: 0 }, false); //ADD: unit price validation
+    if (unitPrice !== undefined) validateNumber(unitPrice, "unitPrice", { min: 0 }, false);
+    if (supplierId !== undefined && supplierId !== null && supplierId !== "") {
+      validateString(supplierId, "supplierId", false);
+    }
     logger.info(
       `Updating item stock details for item ${itemId}, lot ${oldLotId}`
     );
@@ -533,9 +538,12 @@ export const inventoryApi = {
       updates.expiry_date = expiryDate === null ? null : expiryDate;
     }
 
-    //ADD: Update unit price
     if (unitPrice !== undefined) {
       updates.unit_price = unitPrice;
+    }
+
+    if (supplierId !== undefined) {
+      updates.supplier_id = supplierId === null || supplierId === "" ? null : supplierId;
     }
 
     if (Object.keys(updates).length > 0) {
