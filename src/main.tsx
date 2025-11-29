@@ -19,6 +19,7 @@ import { AuthContextProvider } from "./lib/db/db.auth";
 import { SearchProvider } from "./contexts/SearchContext";
 import { ItemSelectionProvider } from "./contexts/ItemSelectionContext";
 import Auth404 from './pages/Auth404';
+import AccountProfile from "./pages/AccountProfile";
 
 const router = createBrowserRouter([
   {
@@ -80,6 +81,10 @@ const router = createBrowserRouter([
       {
         path: "/generate-report",
         element: <GenerateReport />,
+      },
+      {
+        path: "/accountprofile",
+        element: <AccountProfile />,
       },
     ],
   },
