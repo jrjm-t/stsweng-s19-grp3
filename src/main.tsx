@@ -20,6 +20,7 @@ import { SearchProvider } from "./contexts/SearchContext";
 import { ItemSelectionProvider } from "./contexts/ItemSelectionContext";
 import Auth404 from './pages/Auth404';
 import AccountProfile from "./pages/AccountProfile";
+import MemberRequests from "./pages/MemberRequests";
 
 const router = createBrowserRouter([
   {
@@ -85,6 +86,10 @@ const router = createBrowserRouter([
       {
         path: "/accountprofile",
         element: <AccountProfile />,
+      },
+      {
+        path: "/memberrequests",
+        element: <MemberRequests />,
       },
     ],
   },

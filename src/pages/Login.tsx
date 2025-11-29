@@ -5,7 +5,7 @@ import Input from "../components/General/Input";
 import Button from "../components/General/Button";
 import { Heading } from "../components/General/Heading";
 import { useAuth } from "../lib/db/db.auth";
-import Toast from "../components/General/Toast"; // Adjust path if needed
+import Toast from "../components/General/Toast"; 
 
 function Login() {
   const navigate = useNavigate();
