@@ -14,6 +14,7 @@ interface SupplierFormProps {
 function SupplierForm({ mode }: SupplierFormProps) {
   const { user } = useAuth();
   const [form, setForm] = useState({
+    id: "",
     name: "",
     phoneNumber: "",
     emailAddress: "",
@@ -25,6 +26,7 @@ function SupplierForm({ mode }: SupplierFormProps) {
     { value: string; label: string }[]
   >([]);
   const [toast, setToast] = useState<any>(null);
+  const [selectedSupplier, setSelectedSupplier] = useState<any>(null);
 
   const isAdd = mode === "add";
   const isEdit = mode === "edit";
@@ -55,20 +57,29 @@ function SupplierForm({ mode }: SupplierFormProps) {
   };
 
   const handleSupplierSelect = (newValue: any) => {
-    const name = newValue?.value || "";
+    const supplierId = newValue?.value || "";
 
-    setForm((prev) => ({ ...prev, name }));
-
-    if (!isAdd && name) {
-      const selected = allSuppliers.find((s) => s.name === name);
+    if (!isAdd && supplierId) {
+      const selected = allSuppliers.find((s) => s.id === supplierId);
       if (selected) {
+        setSelectedSupplier(selected);
         setForm({
+          id: selected.id,
           name: selected.name,
-          phoneNumber: selected.phoneNumber,
-          emailAddress: selected.emailAddress,
+          phoneNumber: selected.phone_number || "",
+          emailAddress: selected.email || "",
           remarks: selected.remarks || "",
         });
       }
+    } else {
+      setSelectedSupplier(null);
+      setForm({
+        id: "",
+        name: "",
+        phoneNumber: "",
+        emailAddress: "",
+        remarks: "",
+      });
     }
   };
 
@@ -77,55 +88,76 @@ function SupplierForm({ mode }: SupplierFormProps) {
       if (!user?.id) throw new Error("User not logged in.");
 
       if (isAdd) {
-        if (!form.name) throw new Error("Supplier name is required.");
+        if (!form.name.trim()) throw new Error("Supplier name is required.");
 
         await supplierApi.createSupplier({
           userId: user.id,
-          name: form.name,
-          phone: form.phoneNumber || null,
-          email: form.emailAddress || null,
-          remarks: form.remarks || null,
+          name: form.name.trim(),
+          phone: form.phoneNumber.trim() || null,
+          email: form.emailAddress.trim() || null,
+          remarks: form.remarks.trim() || null,
         });
 
         setToast({ message: "Supplier added successfully.", type: "success" });
       }
 
       if (isEdit) {
-        const selected = allSuppliers.find((s) => s.name === form.name);
-        if (!selected) throw new Error("Supplier does not exist.");
+        if (!form.id) throw new Error("Please select a supplier to edit.");
+        if (!form.name.trim()) throw new Error("Supplier name is required.");
+
+        // Check if anything changed
+        const hasChanges = 
+          form.name !== selectedSupplier.name ||
+          form.phoneNumber !== (selectedSupplier.phone_number || "") ||
+          form.emailAddress !== (selectedSupplier.email || "") ||
+          form.remarks !== (selectedSupplier.remarks || "");
+
+        if (!hasChanges) {
+          throw new Error("No changes detected.");
+        }
 
         await supplierApi.updateSupplier({
           userId: user.id,
-          supplierId: selected.id,
-          name: form.name,
-          phone: form.phoneNumber || null,
-          email: form.emailAddress || null,
-          remarks: form.remarks || null,
+          supplierId: form.id,
+          name: form.name.trim(),
+          phone: form.phoneNumber.trim() || null,
+          email: form.emailAddress.trim() || null,
+          remarks: form.remarks.trim() || null,
         });
 
-        setToast({ message: "Supplier updated.", type: "success" });
+        setToast({ message: "Supplier updated successfully.", type: "success" });
       }
 
       if (isDelete) {
-        const selected = allSuppliers.find((s) => s.name === form.name);
-        if (!selected) throw new Error("Supplier not found.");
+        if (!form.id) throw new Error("Please select a supplier to delete.");
+
+        // Confirm deletion
+        const confirmDelete = window.confirm(
+          `Are you sure you want to delete supplier "${form.name}"? This action cannot be undone.`
+        );
+
+        if (!confirmDelete) {
+          return;
+        }
 
         await supplierApi.deleteSupplier({
           userId: user.id,
-          supplierId: selected.id,
+          supplierId: form.id,
         });
 
-        setToast({ message: "Supplier deleted.", type: "success" });
+        setToast({ message: "Supplier deleted successfully.", type: "success" });
       }
 
       await fetchSuppliers();
 
       setForm({
+        id: "",
         name: "",
         phoneNumber: "",
         emailAddress: "",
         remarks: "",
       });
+      setSelectedSupplier(null);
     } catch (err: any) {
       setToast({ message: err.message, type: "error" });
     }
@@ -145,7 +177,6 @@ function SupplierForm({ mode }: SupplierFormProps) {
           </div>
 
           <div className="flex flex-col items-center gap-y-4 sm:gap-y-6 md:gap-y-8 flex-grow">
-            {/* Supplier select */}
             <div className="w-full">
               <label className="block text-xs font-bold text-black mb-1">
                 Supplier Name
@@ -158,12 +189,26 @@ function SupplierForm({ mode }: SupplierFormProps) {
                 classNamePrefix="select"
                 placeholder="Select a supplier"
                 value={
-                  form.name ? { label: form.name, value: form.name } : null
+                  form.id
+                    ? supplierOptions.find((opt) => opt.value === form.id)
+                    : null
                 }
               />
             </div>
 
-            {/* Editable fields */}
+            <Input
+              label="New Supplier Name"
+              name="name"
+              type="text"
+              value={form.name}
+              onChange={handleChange}
+              size="custom"
+              className="w-full"
+              placeholder="Enter new supplier name"
+              inputClassName="bg-white"
+              disabled={!form.id}
+            />
+
             <Input
               label="Phone Number"
               name="phoneNumber"
@@ -174,6 +219,7 @@ function SupplierForm({ mode }: SupplierFormProps) {
               className="w-full"
               placeholder="Enter phone number"
               inputClassName="bg-white"
+              disabled={!form.id}
             />
 
             <Input
@@ -186,6 +232,7 @@ function SupplierForm({ mode }: SupplierFormProps) {
               className="w-full"
               placeholder="Enter email address"
               inputClassName="bg-white"
+              disabled={!form.id}
             />
 
             <Input
@@ -198,11 +245,12 @@ function SupplierForm({ mode }: SupplierFormProps) {
               className="w-full"
               placeholder="Enter remarks"
               inputClassName="bg-white"
+              disabled={!form.id}
             />
           </div>
 
           <div className="flex justify-center mt-4">
-            <Button size="sm" onClick={handleSubmit}>
+            <Button size="sm" onClick={handleSubmit} disabled={!form.id}>
               Save Changes
             </Button>
           </div>
@@ -221,23 +269,20 @@ function SupplierForm({ mode }: SupplierFormProps) {
     );
   }
 
-  return (
-    <>
-      <div className="w-full max-w-[600px] min-h-[550px] mx-4 border border-black/70 rounded-lg bg-white p-4 sm:p-6 md:p-8 flex flex-col">
-        <div className="w-full mb-4">
-          <Heading level={2} size="lg" className="text-black mb-1">
-            {isAdd ? "Add Supplier" : "Delete Supplier"}
-          </Heading>
-          <p className="font-Work-Sans text-md text-border">
-            {isAdd
-              ? "Add a new supplier to the system."
-              : "Select a supplier to remove from records."}
-          </p>
-        </div>
+  if (isDelete) {
+    return (
+      <>
+        <div className="w-full max-w-[600px] min-h-[400px] mx-4 border border-black/70 rounded-lg bg-white p-4 sm:p-6 md:p-8 flex flex-col">
+          <div className="w-full mb-4">
+            <Heading level={2} size="lg" className="text-black mb-1">
+              Delete Supplier
+            </Heading>
+            <p className="font-Work-Sans text-md text-border">
+              Select a supplier to remove from records.
+            </p>
+          </div>
 
-        <div className="flex flex-col items-center gap-y-4 sm:gap-y-6 md:gap-y-9 flex-grow">
-          {/* Supplier select for delete */}
-          {!isAdd && (
+          <div className="flex flex-col items-center gap-y-4 sm:gap-y-6 md:gap-y-9 flex-grow">
             <div className="w-full">
               <label className="block text-xs font-bold text-black mb-1">
                 Supplier Name
@@ -248,74 +293,130 @@ function SupplierForm({ mode }: SupplierFormProps) {
                 onChange={handleSupplierSelect}
                 className="text-sm"
                 classNamePrefix="select"
-                placeholder="Select supplier"
+                placeholder="Select supplier to delete"
                 value={
-                  form.name ? { label: form.name, value: form.name } : null
+                  form.id
+                    ? supplierOptions.find((opt) => opt.value === form.id)
+                    : null
                 }
               />
             </div>
-          )}
 
-          {/* ADD mode name input */}
-          {isAdd && (
-            <Input
-              label="Supplier Name"
-              name="name"
-              type="text"
-              value={form.name}
-              onChange={handleChange}
-              size="custom"
-              className="w-full"
-              placeholder="Enter supplier name"
-              inputClassName="bg-white"
+            {form.id && (
+              <div className="w-full p-4 bg-gray-100 rounded-md">
+                <p className="text-sm font-Work-Sans text-black mb-2">
+                  <strong>Name:</strong> {form.name}
+                </p>
+                {form.phoneNumber && (
+                  <p className="text-sm font-Work-Sans text-black mb-2">
+                    <strong>Phone:</strong> {form.phoneNumber}
+                  </p>
+                )}
+                {form.emailAddress && (
+                  <p className="text-sm font-Work-Sans text-black mb-2">
+                    <strong>Email:</strong> {form.emailAddress}
+                  </p>
+                )}
+                {form.remarks && (
+                  <p className="text-sm font-Work-Sans text-black">
+                    <strong>Remarks:</strong> {form.remarks}
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+
+          <div className="flex justify-center mt-4">
+            <Button 
+              size="sm" 
+              onClick={handleSubmit} 
+              disabled={!form.id}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Delete Supplier
+            </Button>
+          </div>
+        </div>
+
+        {toast && (
+          <div className="flex justify-center mt-4">
+            <Toast
+              message={toast.message}
+              type={toast.type}
+              onClose={() => setToast(null)}
             />
-          )}
+          </div>
+        )}
+      </>
+    );
+  }
 
-          {/* ADD mode fields only */}
-          {isAdd && (
-            <>
-              <Input
-                label="Phone Number"
-                name="phoneNumber"
-                type="text"
-                value={form.phoneNumber}
-                onChange={handleChange}
-                size="custom"
-                className="w-full"
-                placeholder="Enter phone number"
-                inputClassName="bg-white"
-              />
+  // ADD MODE
+  return (
+    <>
+      <div className="w-full max-w-[600px] min-h-[550px] mx-4 border border-black/70 rounded-lg bg-white p-4 sm:p-6 md:p-8 flex flex-col">
+        <div className="w-full mb-4">
+          <Heading level={2} size="lg" className="text-black mb-1">
+            Add Supplier
+          </Heading>
+          <p className="font-Work-Sans text-md text-border">
+            Add a new supplier to the system.
+          </p>
+        </div>
 
-              <Input
-                label="Email Address"
-                name="emailAddress"
-                type="email"
-                value={form.emailAddress}
-                onChange={handleChange}
-                size="custom"
-                className="w-full"
-                placeholder="Enter email address"
-                inputClassName="bg-white"
-              />
+        <div className="flex flex-col items-center gap-y-4 sm:gap-y-6 md:gap-y-9 flex-grow">
+          <Input
+            label="Supplier Name"
+            name="name"
+            type="text"
+            value={form.name}
+            onChange={handleChange}
+            size="custom"
+            className="w-full"
+            placeholder="Enter supplier name"
+            inputClassName="bg-white"
+          />
 
-              <Input
-                label="Remarks"
-                name="remarks"
-                type="text"
-                value={form.remarks}
-                onChange={handleChange}
-                size="custom"
-                className="w-full"
-                placeholder="Enter remarks"
-                inputClassName="bg-white"
-              />
-            </>
-          )}
+          <Input
+            label="Phone Number"
+            name="phoneNumber"
+            type="text"
+            value={form.phoneNumber}
+            onChange={handleChange}
+            size="custom"
+            className="w-full"
+            placeholder="Enter phone number"
+            inputClassName="bg-white"
+          />
+
+          <Input
+            label="Email Address"
+            name="emailAddress"
+            type="email"
+            value={form.emailAddress}
+            onChange={handleChange}
+            size="custom"
+            className="w-full"
+            placeholder="Enter email address"
+            inputClassName="bg-white"
+          />
+
+          <Input
+            label="Remarks"
+            name="remarks"
+            type="text"
+            value={form.remarks}
+            onChange={handleChange}
+            size="custom"
+            className="w-full"
+            placeholder="Enter remarks"
+            inputClassName="bg-white"
+          />
         </div>
 
         <div className="flex justify-center mt-4">
           <Button size="sm" onClick={handleSubmit}>
-            {isAdd ? "Add" : "Delete"}
+            Add Supplier
           </Button>
         </div>
       </div>
