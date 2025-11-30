@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
 import Button from "../components/General/Button";
-import { useAuth } from "../lib/db/db.auth";
+import { supabase, useAuth } from "../lib/db/db.auth";
 import { Heading } from "../components/General/Heading";
+import { userApi } from "../lib/db/db.api";
 
 function Profile() {
   const { user, logout, loading } = useAuth();
@@ -17,11 +18,11 @@ function Profile() {
     password: "",
     role: "",
   });
+  const [saving, setSaving] = useState(false); // to prevent multiple clicks
 
   useEffect(() => {
     if (user && !loading) {
-      // TODO: fetch complete user profile data
-      const username = user.email.split("@")[0];
+      const username = user.email?.split("@")[0];
       setForm({
         name:
           username
@@ -31,11 +32,56 @@ function Profile() {
             )
             .join(" "),
         email: user.email,
-        password: user.password || "", // TODO: return actual password from database
+        password: "", // Password handled separately
         role: user.role || "User",
       });
     }
   }, [user, loading]);
+
+  const handleSaveField = async (fieldKey: keyof typeof form) => {
+    if (!user) return;
+    setSaving(true);
+    try {
+      await userApi.updateUserField(user.id, fieldKey, form[fieldKey]);
+      alert(`${fieldKey.charAt(0).toUpperCase() + fieldKey.slice(1)} updated!`);
+      setEditing({ ...editing, [fieldKey]: false });
+    } catch (err) {
+      console.error(err);
+      alert(`Failed to update ${fieldKey}.`);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleRequestAdmin = async () => {
+    if (!user) return;
+    try {
+      await userApi.requestAdminAccess(user.id); // TODO: implement this API
+      alert("Admin access request sent!");
+    } catch (err) {
+      console.error(err);
+      // Check if the error is a unique constraint violation
+      if (err.code === "23505") {
+        alert("You have already sent an admin access request!");
+      } else {
+        alert("Failed to send admin request. Please try again.");
+      }
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (!user) return;
+    if (!confirm("Are you sure you want to delete your account? This cannot be undone.")) return;
+
+    try {
+      await userApi.deleteUser(user.id);
+      alert("Your account has been deleted.");
+      logout(); // Log out after deletion
+    } catch (err) {
+      console.error(err);
+      alert("Failed to delete account.");
+    }
+  };
 
   if (loading) {
     return (
@@ -47,27 +93,20 @@ function Profile() {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen p-6 bg-gray-50">
-      {/* Profile Card */}
       <div className="w-[950px] bg-white border border-gray-300 rounded-lg shadow p-12 flex flex-col gap-6">
         <div className="flex flex-col items-center mb-4">
           <Heading size="xl">Account Profile</Heading>
         </div>
 
-        {/* Fields */}
         {[
           { label: "Username", key: "name" },
           { label: "Email", key: "email" },
           { label: "Password", key: "password" },
           { label: "Role", key: "role", editable: false },
         ].map((field) => (
-          <div
-            key={field.key}
-            className="flex items-center justify-center gap-4"
-          >
+          <div key={field.key} className="flex items-center justify-center gap-4">
             <div className="w-96 flex flex-col gap-2">
-              <label className="text-sm font-medium text-gray-700">
-                {field.label}
-              </label>
+              <label className="text-sm font-medium text-gray-700">{field.label}</label>
               <input
                 type={field.key === "password" ? "password" : "text"}
                 value={form[field.key as keyof typeof form]}
@@ -79,33 +118,29 @@ function Profile() {
               />
             </div>
 
-            {/* Edit button or Request Admin Access */}
             {field.editable !== false && field.key !== "role" && (
               <Button
                 size="xs"
                 variant="secondary"
+                disabled={saving}
                 onClick={() => {
                   if (editing[field.key as keyof typeof editing]) {
-                    // TODO: save updated field to database
+                    handleSaveField(field.key as keyof typeof form);
+                  } else {
+                    setEditing({ ...editing, [field.key]: true });
                   }
-                  setEditing({
-                    ...editing,
-                    [field.key]: !editing[field.key as keyof typeof editing],
-                  });
                 }}
                 className="mt-7"
               >
                 {editing[field.key as keyof typeof editing] ? "Save" : "Edit"}
               </Button>
             )}
-            {field.key === "role" && user?.role !== "admin" && user?.role !== "authenticated" && (
+
+            {field.key === "role" && user?.role !== "admin" && (
               <Button
                 size="xs"
                 variant="secondary"
-                onClick={() => {
-                  // TODO: handle admin access request
-                  alert("Admin access request sent!");
-                }}
+                onClick={handleRequestAdmin}
                 className="mt-7"
               >
                 Request Access
@@ -114,15 +149,10 @@ function Profile() {
           </div>
         ))}
 
-        {/* Delete Account */}
         <div className="flex justify-center mt-6 pt-6">
-          <button 
+          <button
             className="text-sm text-secondary hover:text-secondary hover:underline"
-            onClick={() => {
-              // TODO: delete user account
-              if (confirm("Are you sure you want to delete your account? This action cannot be undone.")) {
-              }
-            }}
+            onClick={handleDeleteAccount}
           >
             Delete My Account
           </button>

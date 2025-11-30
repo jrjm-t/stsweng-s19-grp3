@@ -88,7 +88,7 @@ const router = createBrowserRouter([
         element: <AccountProfile />,
       },
       {
-        path: "/memberrequests",
+        path: "/member-requests",
         element: <MemberRequests />,
       },
     ],

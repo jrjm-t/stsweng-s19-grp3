@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, use } from "react";
 import { Heading } from "../components/General/Heading";
 import Button from "../components/General/Button";
+import { userApi } from "../lib/db/db.api";
 
 function AdminRequests() {
   const [requests, setRequests] = useState([]);
@@ -8,7 +9,7 @@ function AdminRequests() {
 
   useEffect(() => {
     // TODO: fetch pending admin requests from backend
-    
+
     // FIXME: mock data for now
     setRequests([
       { id: 1, userId: "user1", name: "LUI CASAS", email: "lui@example.com", requestedAt: "2024-01-15" },
@@ -18,10 +19,15 @@ function AdminRequests() {
     setLoading(false);
   }, []);
 
-  const handleAccept = (requestId, userId) => {
-    // TODO: accept admin request
-    setRequests(requests.filter(req => req.id !== requestId));
-    alert("Request accepted!");
+  const handleAccept = async (requestId, userId) => {
+    try {
+      await userApi.updateUserAdminStatus(userId, true); // call API first
+      setRequests((prev) => prev.filter((req) => req.id !== requestId)); // update state safely
+      alert("Request accepted!");
+    } catch (err) {
+      console.error("Failed to accept admin request:", err);
+      alert("Failed to accept request. Please try again.");
+    }
   };
 
   const handleReject = (requestId) => {

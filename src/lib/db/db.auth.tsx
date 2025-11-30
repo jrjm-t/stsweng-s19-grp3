@@ -4,7 +4,8 @@ import { createContext, useContext, useEffect, useMemo, useState } from "react";
 // Env setup
 export const supabase = createClient(
   import.meta.env.VITE_SUPABASE_URL!,
-  import.meta.env.VITE_SUPABASE_ANON_KEY!
+  import.meta.env.VITE_SUPABASE_ANON_KEY!,
+  import.meta.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
 interface IAuth {

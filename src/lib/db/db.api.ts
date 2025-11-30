@@ -1488,6 +1488,67 @@ export const inventoryApi = {
  * functions for handling users
  */
 export const userApi = {
+  async requestAdminAccess(userId: string) {
+    const { data, error } = await supabase
+      .from("admin_requests")
+      .insert({ requester_id: userId, requested_at: new Date().toISOString() })
+      .select()
+      .maybeSingle();
+
+    if (error) throw error;
+    return data;
+  },
+
+  async updateUserAdminStatus(userId: string, isAdmin: boolean) {
+    // update user is_admin to true/false
+    const { data, error } = await supabase
+      .from("users")
+      .update({ is_admin: isAdmin })
+      .eq("id", userId)
+      .select()
+      .maybeSingle();
+
+    if (error) {
+      logger.error(
+        `Failed to update admin status for user ${userId}: ${error.message}`
+      );
+      throw error;
+    }
+
+    return data;
+  },
+
+  async deleteUser(userId: string) {
+    // delete user from users table and admin_requests table
+    const { error } = await supabase.from("users").delete().eq("id", userId);
+
+    await supabase.from("admin_requests").delete().eq("id", userId);
+
+    // for now no need to delete from auth. This requires dealing with permissions, and
+    // also runs the risk of impersonation if we allow the same username to be reused.
+    // try {
+    //   const { error: authError } = await supabase.auth.admin.deleteUser(userId);
+    //   if (authError) throw authError;
+    // } catch (err) {
+    //   console.error("Failed to delete user from auth:", err);
+    //   throw new Error("Account deleted from database but failed to remove from auth.");
+    // }
+    if (error) throw error;
+    return true;
+  },
+
+  async updateUserField(userId: string, field: string, value: string) {
+    const { data, error } = await supabase
+      .from("users")
+      .update({ [field]: value })
+      .eq("id", userId)
+      .select()
+      .maybeSingle();
+
+    if (error) throw error;
+    return data;
+  },
+
   async createUser(newUser: CreateUserRequest) {
     // Check if uuid does not yet exist in users table
     const { data: existingUser, error: checkError } = await supabase
@@ -1520,4 +1581,20 @@ export const userApi = {
       return user;
     }
   },
+
+  async getUserByUsername(username: string) {
+    const { data: existingUser, error: checkError } = await supabase
+      .from("users")
+      .select("*") // or "id, name, email"
+      .eq("name", username)
+      .maybeSingle();
+
+    if (checkError) {
+      logger.error(`Failed to check user: ${checkError.message}`);
+      throw checkError;
+    }
+
+    // existingUser is either `null` or the full user row
+    return existingUser;
+  }
 }

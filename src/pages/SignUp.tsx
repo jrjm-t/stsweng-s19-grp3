@@ -68,7 +68,6 @@ function SignUp() {
         }
 
         // run backend function to create user in public users table
-        // TODO: fix error where for some reason the uuid of the user from users.auth table does not seem to be assigned to newUser...
         const newUser: CreateUserRequest = {
           id: user.id,
           username,

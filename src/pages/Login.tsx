@@ -4,8 +4,9 @@ import logo from "../assets/Logo.png";
 import Input from "../components/General/Input";
 import Button from "../components/General/Button";
 import { Heading } from "../components/General/Heading";
-import { useAuth } from "../lib/db/db.auth";
+import { supabase, useAuth } from "../lib/db/db.auth";
 import Toast from "../components/General/Toast"; 
+import { userApi } from "../lib/db/db.api";
 
 function Login() {
   const navigate = useNavigate();
@@ -47,8 +48,24 @@ function Login() {
       return;
     }
 
+    const user = await userApi.getUserByUsername(username);
+
+    // even if login is successful, if public.users table has no such user, treat as failed login
+    if (!user) {
+      await supabase.auth.signOut(); // log out the supabase auth session
+      triggerToast("Login failed. Please check your credentials.", "error");
+      return;
+    }
+
+    // // Prevent pending users from logging in
+    // if (user.status === "pending") {
+    //   triggerToast("Login failed. Your account is still pending approval.", "error");
+    //   return;
+    // }
+
     triggerToast("Login successful!", "success");
     setTimeout(() => navigate("/dashboard"), 1500);
+    return;
   };
 
   return (
