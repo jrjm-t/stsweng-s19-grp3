@@ -5,6 +5,7 @@ import Input from "../components/General/Input";
 import Button from "../components/General/Button";
 import { Heading } from "../components/General/Heading";
 import { supabase, useAuth } from "../lib/db/db.auth";
+import { userApi, CreateUserRequest } from "../lib/db/db.api";
 import Toast from "../components/General/Toast"; // adjust import path if needed
 
 function SignUp() {
@@ -60,7 +61,25 @@ function SignUp() {
       });
 
       if (data && !error) {
+
+        const user = data?.user;
+        if (!user) {
+          throw new Error("User not returned from signUp");
+        }
+
+        // run backend function to create user in public users table
+        // TODO: fix error where for some reason the uuid of the user from users.auth table does not seem to be assigned to newUser...
+        const newUser: CreateUserRequest = {
+          id: user.id,
+          username,
+          email,
+          admin: false,
+        };
+
+        await userApi.createUser(newUser);
+
         triggerToast("Successfully registered account!", "success");
+
         setTimeout(() => navigate("/vrnqxh6p2dj722u7/login"), 1500); // delay navigation to let toast show
       } else if (error) {
         triggerToast(error.message, "error");
