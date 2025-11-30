@@ -56,11 +56,12 @@ function Profile() {
   const handleRequestAdmin = async () => {
     if (!user) return;
     try {
-      await userApi.requestAdminAccess(user.id); // TODO: implement this API
+      await userApi.requestAdminAccess(user.id);
       alert("Admin access request sent!");
     } catch (err) {
       console.error(err);
       // Check if the error is a unique constraint violation
+      // that is, a user can only make one admin request at a time
       if (err.code === "23505") {
         alert("You have already sent an admin access request!");
       } else {

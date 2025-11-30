@@ -1488,6 +1488,36 @@ export const inventoryApi = {
  * functions for handling users
  */
 export const userApi = {
+
+  // get all requests for admin priveleges
+  async getAdminRequests() {
+    const { data, error } = await supabase
+      .from("admin_requests")
+      .select(`
+      requester_id,
+      requested_at,
+      requester_id,
+      users (
+        id,
+        name,
+        email
+      )
+    `)
+
+    if (error) throw error;
+
+    // flatten the data for easier use in frontend
+    const formattedData = data.map(item => ({
+      id: item.requester_id,
+      requestedAt: item.requested_at,
+      userId: item.requester_id,
+      name: item.users.name,
+      email: item.users.email
+    }));
+
+    return formattedData;
+  },
+
   async requestAdminAccess(userId: string) {
     const { data, error } = await supabase
       .from("admin_requests")
@@ -1507,6 +1537,9 @@ export const userApi = {
       .eq("id", userId)
       .select()
       .maybeSingle();
+
+    // delete admin request
+    await supabase.from("admin_requests").delete().eq("requester_id", userId);
 
     if (error) {
       logger.error(

@@ -7,16 +7,22 @@ function AdminRequests() {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    // TODO: fetch pending admin requests from backend
 
-    // FIXME: mock data for now
-    setRequests([
-      { id: 1, userId: "user1", name: "LUI CASAS", email: "lui@example.com", requestedAt: "2024-01-15" },
-      { id: 2, userId: "user2", name: "AKI", email: "aki@example.com", requestedAt: "2024-01-16" },
-      { id: 3, userId: "user3", name: "DWIGHT RAMOS", email: "dwight@example.com", requestedAt: "2024-01-17" },
-    ]);
-    setLoading(false);
+  useEffect(() => {
+    const fetchRequests = async () => {
+      try {
+        setLoading(true);
+        const data = await userApi.getAdminRequests(); // call backend function
+        setRequests(data); // fill state with real data
+        console.log("Fetched admin requests:", data);
+      } catch (error) {
+        console.error("Error fetching admin requests:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchRequests();
   }, []);
 
   const handleAccept = async (requestId, userId) => {
@@ -30,10 +36,15 @@ function AdminRequests() {
     }
   };
 
-  const handleReject = (requestId) => {
-    // TODO: reject admin request
-    setRequests(requests.filter(req => req.id !== requestId));
-    alert("Request rejected!");
+  const handleReject = async (requestId, userId) => {
+    try {
+      await userApi.updateUserAdminStatus(userId, false); // call API first
+      setRequests((prev) => prev.filter((req) => req.id !== requestId)); // update state safely
+      alert("Request rejected!");
+    } catch (err) {
+      console.error("Failed to reject admin request:", err);
+      alert("Failed to reject request. Please try again.");
+    }
   };
 
   const handleAcceptAll = () => {
@@ -91,7 +102,7 @@ function AdminRequests() {
                   <Button
                     size="sm"
                     variant="secondary"
-                    onClick={() => handleReject(request.id)}
+                    onClick={() => handleReject(request.id, request.userId)}
                   >
                     Reject
                   </Button>
