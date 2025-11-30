@@ -4,7 +4,7 @@ import logo from "../assets/Logo.png";
 import Input from "../components/General/Input";
 import Button from "../components/General/Button";
 import { Heading } from "../components/General/Heading";
-import { useAuth } from "../lib/db/db.auth";
+import { supabase, useAuth } from "../lib/db/db.auth";
 import Toast from "../components/General/Toast"; // adjust import path if needed
 
 function SignUp() {
@@ -45,17 +45,40 @@ function SignUp() {
     if (password.trim() !== confirmPassword.trim())
       return triggerToast("Password does not match confirmation.", "error");
 
+    const email = `${username}@gabay.org`;
+
     try {
-      const success = await register(username, password, false);
-      if (success) {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: username,
+            // is_admin: is_admin
+          }
+        }
+      });
+
+      if (data && !error) {
         triggerToast("Successfully registered account!", "success");
         setTimeout(() => navigate("/vrnqxh6p2dj722u7/login"), 1500); // delay navigation to let toast show
-      } else {
-        triggerToast("Username already exists. Please choose a different username.", "error");
+      } else if (error) {
+        triggerToast(error.message, "error");
       }
     } catch (err: any) {
       triggerToast("Registration failed. Please try again.", "error");
     }
+
+    //   const success = await register(username, password, false);
+    //   if (success) {
+    //     triggerToast("Successfully registered account!", "success");
+    //     setTimeout(() => navigate("/vrnqxh6p2dj722u7/login"), 1500); // delay navigation to let toast show
+    //   } else {
+    //     triggerToast("Username already exists. Please choose a different username.", "error");
+    //   }
+    // } catch (err: any) {
+    //   triggerToast("Registration failed. Please try again.", "error");
+    // }
   };
 
   return (

@@ -25,11 +25,11 @@ import MemberRequests from "./pages/MemberRequests";
 const router = createBrowserRouter([
   {
     path: "/login",
-    element: <Auth404 />,
+    element: <Login />,
   },
   {
     path: "/sign-up",
-    element: <Auth404 />,
+    element: <SignUp />,
   },
   {
     path: "/vrnqxh6p2dj722u7/login",
