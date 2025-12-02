@@ -1,0 +1,23 @@
+[
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440001",
+    "name": "Test Medical Supplier A",
+    "phone_number": "+1234567890",
+    "email": "contact@medicalsuppliera.com",
+    "remarks": "Primary medical supplies supplier"
+  },
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440002", 
+    "name": "Test Medical Supplier B",
+    "phone_number": "+1987654321",
+    "email": "info@medicalsupplierb.com",
+    "remarks": "Backup supplier for emergency orders"
+  },
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440003",
+    "name": "Test Pharmacy Distributor",
+    "phone_number": null,
+    "email": "orders@pharmdist.com",
+    "remarks": null
+  }
+]
