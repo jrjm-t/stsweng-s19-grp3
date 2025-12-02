@@ -1,10 +1,13 @@
-import { inventoryApi, validateString, validateNumber } from "./db.api";
+import { inventoryApi, userApi, validateString, validateNumber } from "./db.api";
 
 // prevent Jest from crashing when it sees '\
 // import.meta.env' which only Vite understands
 jest.mock("./index", () => ({
   supabase: {
     from: jest.fn(),
+    auth: {
+      updateUser: jest.fn(), // <--- Added for Password Change TDD
+    },
   },
 }));
 
@@ -378,4 +381,47 @@ describe('number validation', () => {
   it('should accept an integer within range', async () => {
     expect(() => validateNumber(67, "name", { min: 0, max: 99999 })).not.toThrow();
   })
+});
+
+describe("change password validation", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("changePassword should call supabase.auth.updateUser with new password", async () => {
+    //mock success response
+    (mockedSupabase.auth.updateUser as jest.Mock).mockResolvedValue({
+      data: { user: { id: "123" } },
+      error: null,
+    });
+
+    //api call
+    const newPass = "securePass123";
+    await userApi.changePassword(newPass);
+
+    //assertion
+    expect(mockedSupabase.auth.updateUser).toHaveBeenCalledWith({
+      password: newPass,
+    });
+  });
+
+  it("changePassword should throw error for short password", async () => {
+    await expect(userApi.changePassword("123")).rejects.toThrow(
+      "Password must be at least 6 characters"
+    );
+    expect(mockedSupabase.auth.updateUser).not.toHaveBeenCalled();
+  });
+
+  it("changePassword should throw error if Supabase fails", async () => {
+    //mock fail
+    (mockedSupabase.auth.updateUser as jest.Mock).mockResolvedValue({
+      data: null,
+      error: { message: "Weak password" },
+    });
+
+    //assert error
+    await expect(userApi.changePassword("weakpass")).rejects.toThrow(
+      "Weak password"
+    );
+  });
 });

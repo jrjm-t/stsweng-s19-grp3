@@ -18,11 +18,15 @@ function Profile() {
     password: "",
     role: "",
   });
+  
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [saving, setSaving] = useState(false); // to prevent multiple clicks
 
   useEffect(() => {
     if (user && !loading) {
-      const username = user.email?.split("@")[0];
+      const safeEmail = user.email || "";
+      const username = safeEmail.includes("@") ? safeEmail.split("@")[0] : "User";
+      
       setForm({
         name:
           username
@@ -31,7 +35,7 @@ function Profile() {
               (w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()
             )
             .join(" "),
-        email: user.email,
+        email: safeEmail,
         password: "", // Password handled separately
         role: user.role || "User",
       });
@@ -42,12 +46,32 @@ function Profile() {
     if (!user) return;
     setSaving(true);
     try {
-      await userApi.updateUserField(user.id, fieldKey, form[fieldKey]);
-      alert(`${fieldKey.charAt(0).toUpperCase() + fieldKey.slice(1)} updated!`);
-      setEditing({ ...editing, [fieldKey]: false });
-    } catch (err) {
+      if (fieldKey === "password") {
+        if (form.password.length < 6) {
+          alert("Password must be at least 6 characters.");
+          setSaving(false);
+          return;
+        }
+        if (form.password !== confirmPassword) {
+          alert("Passwords do not match.");
+          setSaving(false);
+          return;
+        }
+        await userApi.changePassword(form.password);
+        alert("Password updated successfully!");
+        setForm({ ...form, password: "" });
+        setConfirmPassword("");
+        setEditing({ ...editing, password: false });
+
+      } else {
+        await userApi.updateUserField(user.id, fieldKey, form[fieldKey]);
+        alert(`${fieldKey.charAt(0).toUpperCase() + fieldKey.slice(1)} updated!`);
+        setEditing({ ...editing, [fieldKey]: false });
+      }
+
+    } catch (err: any) {
       console.error(err);
-      alert(`Failed to update ${fieldKey}.`);
+      alert(err.message || `Failed to update ${fieldKey}.`);
     } finally {
       setSaving(false);
     }
@@ -58,10 +82,8 @@ function Profile() {
     try {
       await userApi.requestAdminAccess(user.id);
       alert("Admin access request sent!");
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      // Check if the error is a unique constraint violation
-      // that is, a user can only make one admin request at a time
       if (err.code === "23505") {
         alert("You have already sent an admin access request!");
       } else {
@@ -105,24 +127,42 @@ function Profile() {
           { label: "Password", key: "password" },
           { label: "Role", key: "role", editable: false },
         ].map((field) => (
-          <div key={field.key} className="flex items-center justify-center gap-4">
+          <div key={field.key} className="flex items-start justify-center gap-4">
             <div className="w-96 flex flex-col gap-2">
               <label className="text-sm font-medium text-gray-700">{field.label}</label>
-              <input
-                type={field.key === "password" ? "password" : "text"}
-                value={form[field.key as keyof typeof form]}
-                disabled={!editing[field.key as keyof typeof editing]}
-                onChange={(e) =>
-                  setForm({ ...form, [field.key]: e.target.value })
-                }
-                className="border border-gray-300 rounded px-3 py-2 disabled:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
-              />
+              {field.key === "password" && editing.password ? (
+                <div className="flex flex-col gap-2">
+                   <input
+                    type="password"
+                    placeholder="New Password"
+                    value={form.password}
+                    onChange={(e) => setForm({ ...form, password: e.target.value })}
+                    className="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
+                  />
+                  <input
+                    type="password"
+                    placeholder="Confirm Password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
+                  />
+                </div>
+              ) : (
+                <input
+                  type={field.key === "password" ? "password" : "text"}
+                  value={field.key === "password" ? "********" : form[field.key as keyof typeof form]}
+                  disabled={!editing[field.key as keyof typeof editing]}
+                  onChange={(e) =>
+                    setForm({ ...form, [field.key]: e.target.value })
+                  }
+                  className="border border-gray-300 rounded px-3 py-2 disabled:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
+                />
+              )}
             </div>
 
             {field.editable !== false && field.key !== "role" && (
               <Button
                 size="xs"
-                variant="secondary"
                 disabled={saving}
                 onClick={() => {
                   if (editing[field.key as keyof typeof editing]) {
@@ -136,11 +176,23 @@ function Profile() {
                 {editing[field.key as keyof typeof editing] ? "Save" : "Edit"}
               </Button>
             )}
+            {field.key === "password" && editing.password && (
+               <Button
+               size="xs"
+               onClick={() => {
+                 setEditing({ ...editing, password: false });
+                 setForm({ ...form, password: "" });
+                 setConfirmPassword("");
+               }}
+               className="mt-7 bg-gray-200 hover:bg-gray-300 text-black border-none"
+             >
+               Cancel
+             </Button>
+            )}
 
             {field.key === "role" && user?.role !== "admin" && (
               <Button
                 size="xs"
-                variant="secondary"
                 onClick={handleRequestAdmin}
                 className="mt-7"
               >

@@ -1506,14 +1506,16 @@ export const userApi = {
 
     if (error) throw error;
 
-    // flatten the data for easier use in frontend
-    const formattedData = data.map(item => ({
-      id: item.requester_id,
-      requestedAt: item.requested_at,
-      userId: item.requester_id,
-      name: item.users.name,
-      email: item.users.email
-    }));
+    const formattedData = data.map((item: any) => {
+      const user = Array.isArray(item.users) ? item.users[0] : item.users;
+      return {
+        id: item.requester_id,
+        requestedAt: item.requested_at,
+        userId: item.requester_id,
+        name: user?.name,
+        email: user?.email
+      };
+    });
 
     return formattedData;
   },
@@ -1557,15 +1559,6 @@ export const userApi = {
 
     await supabase.from("admin_requests").delete().eq("id", userId);
 
-    // for now no need to delete from auth. This requires dealing with permissions, and
-    // also runs the risk of impersonation if we allow the same username to be reused.
-    // try {
-    //   const { error: authError } = await supabase.auth.admin.deleteUser(userId);
-    //   if (authError) throw authError;
-    // } catch (err) {
-    //   console.error("Failed to delete user from auth:", err);
-    //   throw new Error("Account deleted from database but failed to remove from auth.");
-    // }
     if (error) throw error;
     return true;
   },
@@ -1629,5 +1622,30 @@ export const userApi = {
 
     // existingUser is either `null` or the full user row
     return existingUser;
+  },
+
+  //change password
+  async changePassword(newPassword: string) {
+    logger.info("Initiating password change...");
+
+    if (!newPassword || typeof newPassword !== "string") {
+      throw new Error("Password is required");
+    }
+    
+    if (newPassword.length < 6) {
+      throw new Error("Password must be at least 6 characters");
+    }
+
+    const { error } = await supabase.auth.updateUser({
+      password: newPassword
+    });
+
+    if (error) {
+      logger.error(`Failed to change password: ${error.message}`);
+      throw new Error(error.message);
+    }
+
+    logger.success("Password changed successfully.");
+    return true;
   }
-}
+};
