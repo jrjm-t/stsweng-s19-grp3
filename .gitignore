@@ -27,3 +27,6 @@ dist-ssr
 .vscode/
 .env
 .vercel
+
+# e2e test files
+**/*.cy.ts
