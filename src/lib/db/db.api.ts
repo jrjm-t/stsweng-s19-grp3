@@ -23,7 +23,7 @@ export const handleApiError = (error: unknown) => {
 };
 
 // --- Input Validation Helpers ---
-function validateString(value: any, name: string, required = true) {
+export function validateString(value: any, name: string, required = true) {
   if (required && (typeof value !== "string" || value.trim() === "")) {
     throw new ApiError(
       `${name} must be a non-empty string`,
@@ -36,7 +36,7 @@ function validateString(value: any, name: string, required = true) {
   }
 }
 
-function validateNumber(
+export function validateNumber(
   value: any,
   name: string,
   opts: { min?: number; max?: number; integer?: boolean } = {},
@@ -118,8 +118,7 @@ function validateArray(
     (!Array.isArray(value) || (opts.minLength && value.length < opts.minLength))
   ) {
     throw new ApiError(
-      `${name} must be an array${
-        opts.minLength ? ` of at least ${opts.minLength} items` : ""
+      `${name} must be an array${opts.minLength ? ` of at least ${opts.minLength} items` : ""
       }`,
       400,
       "BAD_REQUEST"
@@ -175,6 +174,13 @@ export interface StockUpdateRequest {
   userId: string;
 }
 
+export interface CreateUserRequest {
+  id: string;
+  username: string;
+  email: string;
+  admin: boolean;
+}
+
 export type StockFilter = "all" | "deleted" | "active";
 
 export type NotificationType = "LOW_STOCK" | "NEAR_EXPIRY" | "EXPIRED";
@@ -212,9 +218,9 @@ export const inventoryApi = {
       //ADD: unit price validation
       if (data.initialStock.unitPrice !== undefined) {
         validateNumber(
-          data.initialStock.unitPrice, 
-          "initialStock.unitPrice", 
-          { min: 0 }, 
+          data.initialStock.unitPrice,
+          "initialStock.unitPrice",
+          { min: 0 },
           false
         );
       }
@@ -568,7 +574,7 @@ export const inventoryApi = {
     validateString(userId, "userId");
     validateNumber(quantity, "quantity", { min: 1, integer: true });
     //ADD: unit price validation
-    if(unitPrice !== undefined){
+    if (unitPrice !== undefined) {
       validateNumber(unitPrice, "unitPrice", { min: 0 }, false);
     }
     logger.info(`Creating new lot ${lotId} for item ID ${itemId}`);
@@ -714,8 +720,7 @@ export const inventoryApi = {
       validateNumber(quantity, "quantity", { min: 0, integer: true });
     }
     logger.info(
-      `Creating ${type} transaction for lot ${lotId} by user ${userId}${
-        type !== "DELETE" ? ` with quantity ${quantity}` : ""
+      `Creating ${type} transaction for lot ${lotId} by user ${userId}${type !== "DELETE" ? ` with quantity ${quantity}` : ""
       }`
     );
 
@@ -868,10 +873,10 @@ export const inventoryApi = {
             tx.type === "DEPOSIT"
               ? `+${tx.item_qty_change}`
               : tx.type === "DISTRIBUTE" || tx.type === "DISPOSE"
-              ? `${tx.item_qty_change}` // already negative
-              : tx.type === "DELETE"
-              ? "X"
-              : tx.type,
+                ? `${tx.item_qty_change}` // already negative
+                : tx.type === "DELETE"
+                  ? "X"
+                  : tx.type,
         };
       });
 
@@ -1276,8 +1281,7 @@ export const inventoryApi = {
         lotDetails = await inventoryApi.getItemsByLotIds(allLotIds, "all");
       } catch (e) {
         logger.error(
-          `Failed to fetch lot details for notifications: ${
-            (e as Error).message
+          `Failed to fetch lot details for notifications: ${(e as Error).message
           }`
         );
         lotDetails = [];
@@ -1387,10 +1391,10 @@ export const inventoryApi = {
   */
   async getFinancialSummary() { // TODO: implement backend
     logger.info("Calculating financial summary");
-  
-  // Get all active items
+
+    // Get all active items
     const items = await this.getItems("active");
-    
+
     // Calculate total inventory value
     let totalInventoryValue = 0;
     items.forEach((item: any) => {
@@ -1399,7 +1403,7 @@ export const inventoryApi = {
       });
     });
     const expiredItems = await this.getExpiredItems();
-  
+
     // Calculate expiration loss value
     let totalExpirationValue = 0;
     expiredItems.forEach((stock: any) => {
@@ -1407,10 +1411,10 @@ export const inventoryApi = {
     });
 
     logger.success(`Financial summary: Inventory=₱${totalInventoryValue.toFixed(2)}, Expired=₱${totalExpirationValue.toFixed(2)}`);
-    
-    return { 
-      totalInventoryValue: totalInventoryValue.toFixed(2), 
-      totalExpirationValue: totalExpirationValue.toFixed(2) 
+
+    return {
+      totalInventoryValue: totalInventoryValue.toFixed(2),
+      totalExpirationValue: totalExpirationValue.toFixed(2)
     };
   },
 
@@ -1478,4 +1482,170 @@ export const inventoryApi = {
     logger.success(`Fetched ${itemDetails.length} detailed item information`);
     return itemDetails;
   },
+};
+
+/**
+ * functions for handling users
+ */
+export const userApi = {
+
+  // get all requests for admin priveleges
+  async getAdminRequests() {
+    const { data, error } = await supabase
+      .from("admin_requests")
+      .select(`
+      requester_id,
+      requested_at,
+      requester_id,
+      users (
+        id,
+        name,
+        email
+      )
+    `)
+
+    if (error) throw error;
+
+    const formattedData = data.map((item: any) => {
+      const user = Array.isArray(item.users) ? item.users[0] : item.users;
+      return {
+        id: item.requester_id,
+        requestedAt: item.requested_at,
+        userId: item.requester_id,
+        name: user?.name,
+        email: user?.email
+      };
+    });
+
+    return formattedData;
+  },
+
+  async requestAdminAccess(userId: string) {
+    const { data, error } = await supabase
+      .from("admin_requests")
+      .insert({ requester_id: userId, requested_at: new Date().toISOString() })
+      .select()
+      .maybeSingle();
+
+    if (error) throw error;
+    return data;
+  },
+
+  async updateUserAdminStatus(userId: string, isAdmin: boolean) {
+    // update user is_admin to true/false
+    const { data, error } = await supabase
+      .from("users")
+      .update({ is_admin: isAdmin })
+      .eq("id", userId)
+      .select()
+      .maybeSingle();
+
+    // delete admin request
+    await supabase.from("admin_requests").delete().eq("requester_id", userId);
+
+    if (error) {
+      logger.error(
+        `Failed to update admin status for user ${userId}: ${error.message}`
+      );
+      throw error;
+    }
+
+    return data;
+  },
+
+  async deleteUser(userId: string) {
+    // delete user from users table and admin_requests table
+    const { error } = await supabase.from("users").delete().eq("id", userId);
+
+    await supabase.from("admin_requests").delete().eq("id", userId);
+
+    if (error) throw error;
+    return true;
+  },
+
+  async updateUserField(userId: string, field: string, value: string) {
+    const { data, error } = await supabase
+      .from("users")
+      .update({ [field]: value })
+      .eq("id", userId)
+      .select()
+      .maybeSingle();
+
+    if (error) throw error;
+    return data;
+  },
+
+  async createUser(newUser: CreateUserRequest) {
+    // Check if uuid does not yet exist in users table
+    const { data: existingUser, error: checkError } = await supabase
+      .from("users")
+      .select("name")
+      .eq("name", newUser.username)
+      .maybeSingle();
+
+    if (checkError) {
+      logger.error(`Failed to check user: ${checkError.message}`);
+      throw checkError;
+    }
+
+    // if user does not exist in the public.users table
+    if (!existingUser) {
+      logger.info('Creating user: ${newUser.username}');
+
+      // insert new user
+      const { data: user, error: userError } = await supabase
+        .from("users")
+        .insert({ id: newUser.id, name: newUser.username, email: newUser.email, is_admin: newUser.admin })
+        .select()
+        .single();
+
+      if (userError) {
+        logger.error(`Failed to create user: ${userError.message}`);
+        throw userError;
+      }
+
+      return user;
+    }
+  },
+
+  async getUserByUsername(username: string) {
+    const { data: existingUser, error: checkError } = await supabase
+      .from("users")
+      .select("*") // or "id, name, email"
+      .eq("name", username)
+      .maybeSingle();
+
+    if (checkError) {
+      logger.error(`Failed to check user: ${checkError.message}`);
+      throw checkError;
+    }
+
+    // existingUser is either `null` or the full user row
+    return existingUser;
+  },
+
+  //change password
+  async changePassword(newPassword: string) {
+    logger.info("Initiating password change...");
+
+    if (!newPassword || typeof newPassword !== "string") {
+      throw new Error("Password is required");
+    }
+    
+    if (newPassword.length < 6) {
+      throw new Error("Password must be at least 6 characters");
+    }
+
+    const { error } = await supabase.auth.updateUser({
+      password: newPassword
+    });
+
+    if (error) {
+      logger.error(`Failed to change password: ${error.message}`);
+      throw new Error(error.message);
+    }
+
+    logger.success("Password changed successfully.");
+    return true;
+  }
 };

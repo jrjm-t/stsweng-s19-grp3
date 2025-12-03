@@ -24,6 +24,7 @@ export default function Sidebar({
     { path: "/edit-item", text: "Edit Item" },
     { path: "/delete-item", text: "Delete Item" },
     { path: "/generate-report", text: "Generate Report" },
+    { path: "/member-requests", text: "Member Requests" },
   ];
 
   return (

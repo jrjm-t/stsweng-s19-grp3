@@ -9,7 +9,6 @@ interface FinancialReportCardProps {
 // FinancialReportCard.jsx
 function FinancialReportCard({ totalInventoryValue, totalExpirationValue }: FinancialReportCardProps) {
   return (
-    // <Link to="/generate-report" className="block w-full max-w-[800px]"> # FIXME: is this supposed to link to something? or automatic
       <div
         className="w-full h-[240px] sm:h-[260px] bg-white border border-black/70 rounded-lg overflow-hidden 
         flex flex-col shadow-lg py-4 px-6 sm:py-6 sm:px-8 cursor-pointer transition duration-200 ease-in-out gap-6

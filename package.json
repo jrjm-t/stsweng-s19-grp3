@@ -14,7 +14,7 @@
   },
   "dependencies": {
     "@pipedream/html_2_pdf": "^0.1.1",
-    "@supabase/supabase-js": "^2.50.3",
+    "@supabase/supabase-js": "^2.86.0",
     "@tailwindcss/vite": "^4.1.8",
     "@vercel/node": "^5.2.2",
     "bcrypt": "^6.0.0",
@@ -57,5 +57,21 @@
     "ts-jest": "^29.4.5",
     "typescript": "^5.8.3",
     "vite": "^6.3.5"
-  }
+  },
+  "description": "This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.",
+  "main": "check.js",
+  "directories": {
+    "test": "tests"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jrjm-t/stsweng-s19-grp3.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/jrjm-t/stsweng-s19-grp3/issues"
+  },
+  "homepage": "https://github.com/jrjm-t/stsweng-s19-grp3#readme"
 }
