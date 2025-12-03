@@ -1,6 +1,7 @@
 import { userApi, CreateUserRequest } from "./db.api";
-import { supabase } from "./index"; // or adjust to where it’s exported
 
+// Return a mocked module where `supabase.from()` returns an object
+// that supports the chained methods used in production code.
 jest.mock("./index", () => {
   const fromMock = jest.fn();
   const selectMock = jest.fn();
@@ -9,42 +10,40 @@ jest.mock("./index", () => {
   const insertMock = jest.fn();
   const selectAfterInsertMock = jest.fn();
   const singleMock = jest.fn();
+  const deleteMock = jest.fn();
+  const deleteEqMock = jest.fn();
 
-  // build the query chain
   fromMock.mockReturnValue({
     select: selectMock,
     insert: insertMock,
+    delete: deleteMock,
   });
 
-  selectMock.mockReturnValue({
-    eq: eqMock,
-  });
+  selectMock.mockReturnValue({ eq: eqMock });
+  eqMock.mockReturnValue({ maybeSingle: maybeSingleMock });
+  maybeSingleMock.mockResolvedValue({ data: null, error: null });
 
-  eqMock.mockReturnValue({
-    maybeSingle: maybeSingleMock,
-  });
+  insertMock.mockReturnValue({ select: selectAfterInsertMock });
+  selectAfterInsertMock.mockReturnValue({ single: singleMock });
+  singleMock.mockResolvedValue({ data: { id: 0, name: "testUser@gabay.org" }, error: null });
 
-  maybeSingleMock.mockResolvedValue({
-    data: null,       // means user does not exist yet
-    error: null,
-  });
-
-  insertMock.mockReturnValue({
-    select: selectAfterInsertMock,
-  });
-
-  selectAfterInsertMock.mockReturnValue({
-    single: singleMock,
-  });
-
-  singleMock.mockResolvedValue({
-    data: { id: 0, name: "testUser@gabay.org" },
-    error: null,
-  });
+  deleteMock.mockReturnValue({ eq: deleteEqMock });
+  deleteEqMock.mockResolvedValue({ data: null, error: null });
 
   return {
     supabase: {
       from: fromMock,
+    },
+    __mocks__: {
+      fromMock,
+      selectMock,
+      eqMock,
+      maybeSingleMock,
+      insertMock,
+      selectAfterInsertMock,
+      singleMock,
+      deleteMock,
+      deleteEqMock,
     },
   };
 });
@@ -60,9 +59,26 @@ describe("userAPI", () => {
 
     const result = await userApi.createUser(user);
 
-    expect(supabase.from).toHaveBeenCalledWith("users");
-    // You can also check insert args if you like
-    // but you’d need access to the insert mock from the jest.mock closure
+    const mocked = jest.requireMock("./index") as any;
+    const { supabase, __mocks__ } = mocked;
+
+    expect(__mocks__.fromMock).toHaveBeenCalledWith("users");
     expect(result).toEqual({ id: 0, name: "testUser@gabay.org" });
+  });
+});
+
+describe("userAPI deleteUser", () => {
+  it("calls supabase.from('users').delete().eq(id) and returns true on success", async () => {
+    const userId = "123";
+
+    const result = await userApi.deleteUser(userId);
+
+    const mocked = jest.requireMock("./index") as any;
+    const { __mocks__ } = mocked;
+
+    expect(__mocks__.fromMock).toHaveBeenCalledWith("users");
+    expect(__mocks__.deleteMock).toHaveBeenCalled();
+    expect(__mocks__.deleteEqMock).toHaveBeenCalledWith("id", userId);
+    expect(result).toBe(true);
   });
 });
