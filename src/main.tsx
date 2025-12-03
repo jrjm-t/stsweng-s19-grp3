@@ -22,17 +22,18 @@ import GenerateReport from "./pages/GenerateReport";
 import { AuthContextProvider } from "./lib/db/db.auth";
 import { SearchProvider } from "./contexts/SearchContext";
 import { ItemSelectionProvider } from "./contexts/ItemSelectionContext";
-import Auth404 from "./pages/Auth404";
-import path from "path";
+import Auth404 from './pages/Auth404';
+import AccountProfile from "./pages/AccountProfile";
+import MemberRequests from "./pages/MemberRequests";
 
 const router = createBrowserRouter([
   {
     path: "/login",
-    element: <Auth404 />,
+    element: <Login />,
   },
   {
     path: "/sign-up",
-    element: <Auth404 />,
+    element: <SignUp />,
   },
   {
     path: "/vrnqxh6p2dj722u7/login",
@@ -101,6 +102,10 @@ const router = createBrowserRouter([
       {
         path: "/delete-supplier",
         element: <DeleteSupplier />,
+      },
+      {
+        path: "/member-requests",
+        element: <MemberRequests />,
       },
     ],
   },

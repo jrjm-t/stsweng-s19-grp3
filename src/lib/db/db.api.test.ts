@@ -1,10 +1,14 @@
 import { inventoryApi, supplierApi } from "./db.api";
+import { userApi, validateString, validateNumber } from "./db.api";
 
 // prevent Jest from crashing when it sees '\
 // import.meta.env' which only Vite understands
 jest.mock("./index", () => ({
   supabase: {
     from: jest.fn(),
+    auth: {
+      updateUser: jest.fn(), // <--- Added for Password Change TDD
+    },
   },
 }));
 
@@ -92,7 +96,7 @@ describe("inventoryApi - Cost Tracking", () => {
           ],
         },
       ];
-      
+
       const mockExpiredStocks = [
         { item_qty: 5, unit_price: 10.0 },  // value is 50 since 5 x 10
         { item_qty: 1, unit_price: 15.75 }, // value is 15.75 since 1 x 15.75
@@ -663,5 +667,81 @@ describe("supplierApi - Supplier Management with Admin Auth", () => {
 
       expect(result).toEqual(mockFiltered);
     });
+describe('string validation', () => {
+  it('should throw an error if given an empty string', async () => {
+    expect(() => validateString("", "name")).toThrow();
   });
+
+  it('should throw an error if given a string with only spaces', async () => {
+    expect(() => validateString("     ", "name")).toThrow();
+  })
+
+  it('should throw an error if value received was not a string', async () => {
+    expect(() => validateString(123, "name")).toThrow();
+  })
+
+  it('should pass when given a valid string', async () => {
+    expect(() => validateString("good string", "name")).not.toThrow();
+  })
 });
+
+describe('number validation', () => {
+  it('should throw an error when receiving a number below given range', async () => {
+    expect(() => validateNumber(-1, "name", { min: 0, max: 99999 })).toThrow();
+  })
+
+  it('should throw an error when receivinga non-number like a string', async () => {
+    expect(() => validateNumber("string", "name")).toThrow();
+  })
+
+  it('should throw an error when receiving a number above given range', async () => {
+    expect(() => validateNumber(9001, "name", { min: 0, max: 9000 })).toThrow();
+  })
+
+  it('should accept an integer within range', async () => {
+    expect(() => validateNumber(67, "name", { min: 0, max: 99999 })).not.toThrow();
+  })
+});
+
+describe("change password validation", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("changePassword should call supabase.auth.updateUser with new password", async () => {
+    //mock success response
+    (mockedSupabase.auth.updateUser as jest.Mock).mockResolvedValue({
+      data: { user: { id: "123" } },
+      error: null,
+    });
+
+    //api call
+    const newPass = "securePass123";
+    await userApi.changePassword(newPass);
+
+    //assertion
+    expect(mockedSupabase.auth.updateUser).toHaveBeenCalledWith({
+      password: newPass,
+    });
+  });
+
+  it("changePassword should throw error for short password", async () => {
+    await expect(userApi.changePassword("123")).rejects.toThrow(
+      "Password must be at least 6 characters"
+    );
+    expect(mockedSupabase.auth.updateUser).not.toHaveBeenCalled();
+  });
+
+  it("changePassword should throw error if Supabase fails", async () => {
+    //mock fail
+    (mockedSupabase.auth.updateUser as jest.Mock).mockResolvedValue({
+      data: null,
+      error: { message: "Weak password" },
+    });
+
+    //assert error
+    await expect(userApi.changePassword("weakpass")).rejects.toThrow(
+      "Weak password"
+    );
+  });
+})})});

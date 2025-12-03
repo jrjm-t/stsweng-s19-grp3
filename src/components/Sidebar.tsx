@@ -29,6 +29,7 @@ export default function Sidebar({
     { path: "/add-supplier", text: "Add Supplier" },
     { path: "/edit-supplier", text: "Edit Supplier" },
     { path: "/delete-supplier", text: "Delete Supplier" },
+    { path: "/member-requests", text: "Member Requests" },
   ];
 
   return (
