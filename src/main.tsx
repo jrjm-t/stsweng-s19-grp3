@@ -8,17 +8,22 @@ import SignUp from "./pages/SignUp";
 import Dashboard from "./pages/Dashboard";
 import Inventory from "./pages/Inventory";
 import ActivityLog from "./pages/ActivityLog";
+import Suppliers from "./pages/Suppliers";
 import AddItem from "./pages/AddItem";
 import CheckOut from "./pages/CheckOut";
 import Notifications from "./pages/Notifications";
 import NotificationDetails from "./pages/NotificationDetails";
 import EditItem from "./pages/EditItem";
 import DeleteItem from "./pages/DeleteItem";
+import AddSupplier from "./pages/AddSupplier";
+import EditSupplier from "./pages/EditSupplier";
+import DeleteSupplier from "./pages/DeleteSupplier";
 import GenerateReport from "./pages/GenerateReport";
 import { AuthContextProvider } from "./lib/db/db.auth";
 import { SearchProvider } from "./contexts/SearchContext";
 import { ItemSelectionProvider } from "./contexts/ItemSelectionContext";
-import Auth404 from './pages/Auth404';
+import Auth404 from "./pages/Auth404";
+import path from "path";
 
 const router = createBrowserRouter([
   {
@@ -48,6 +53,10 @@ const router = createBrowserRouter([
       {
         path: "/inventory",
         element: <Inventory />,
+      },
+      {
+        path: "/suppliers",
+        element: <Suppliers />,
       },
       {
         path: "/activity-log",
@@ -80,6 +89,18 @@ const router = createBrowserRouter([
       {
         path: "/generate-report",
         element: <GenerateReport />,
+      },
+      {
+        path: "/add-supplier",
+        element: <AddSupplier />,
+      },
+      {
+        path: "/edit-supplier",
+        element: <EditSupplier />,
+      },
+      {
+        path: "/delete-supplier",
+        element: <DeleteSupplier />,
       },
     ],
   },

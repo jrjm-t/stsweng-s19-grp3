@@ -6,6 +6,7 @@ interface InventoryCardProps {
   item: {
     name: string;
     lotId: string;
+    supplier: string;
     qty: number;
     unitPrice: string;
     totalPrice: string;
@@ -38,6 +39,7 @@ function InventoryCard({ item }: InventoryCardProps) {
             {item.lotId.slice(0, 5)}…
           </span>
         </div>
+        <p className="text-sm">Supplier: {item.supplier}</p>
         <p className="text-sm">Qty: {item.qty}</p>
         <p className="text-sm">Unit Price: Php {item.unitPrice}</p>
         <p className="text-sm">Total Price: Php {item.totalPrice}</p>

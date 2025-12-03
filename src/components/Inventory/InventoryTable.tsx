@@ -21,12 +21,13 @@ function InventoryTable({ columns, data }: TableProps) {
         <colgroup>
           <col className="w-[160px]" />
           <col className="w-[180px]" />
+          <col className="w-[140px]" />
           <col className="w-[60px]" />
           <col className="w-[100px]" />
           <col className="w-[100px]" />
           <col className="w-[100px]" />
-          <col className="w-[100px]" /> 
-          <col className="w-[100px]" /> 
+          <col className="w-[100px]" />
+          <col className="w-[100px]" />
         </colgroup>
 
         <thead>
@@ -74,6 +75,7 @@ function InventoryTable({ columns, data }: TableProps) {
                             initial={initialQty}
                             onChange={(val) => {
                               const name = row["name"] as string;
+                              const supplier = row["supplier"] as string;
                               const expDate = row["expDate"] as string;
                               const lastModified = row[
                                 "lastModified"

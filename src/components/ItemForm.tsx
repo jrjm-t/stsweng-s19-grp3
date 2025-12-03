@@ -5,7 +5,7 @@ import Select from "react-select";
 import Input from "./General/Input";
 import Button from "./General/Button";
 import Toast from "./General/Toast";
-import { inventoryApi } from "../lib/db/db.api";
+import { inventoryApi, supplierApi } from "../lib/db/db.api";
 import { useAuth } from "../lib/db/db.auth";
 
 interface ItemFormProps {
@@ -22,6 +22,7 @@ function ItemForm({ mode }: ItemFormProps) {
     newItem: "",
     newLotId: "",
     unitPrice: "",
+    supplierId: "",
   });
 
   const [itemOptions, setItemOptions] = useState<
@@ -30,6 +31,10 @@ function ItemForm({ mode }: ItemFormProps) {
   const [lotOptions, setLotOptions] = useState<
     { value: string; label: string }[]
   >([]);
+const [supplierOptions, setSupplierOptions] = useState<
+  { value: string; label: string }[]
+>([]);
+
   const [allItems, setAllItems] = useState<any[]>([]);
   const [toast, setToast] = useState<{
     message: string;
@@ -56,6 +61,20 @@ function ItemForm({ mode }: ItemFormProps) {
   useEffect(() => {
     fetchAndSyncItems();
   }, []);
+
+  useEffect(() => {
+  const fetchSuppliers = async () => {
+    try {
+      const suppliers = await supplierApi.getSuppliers();
+      setSupplierOptions(
+        suppliers.map((s: any) => ({ value: s.id, label: s.name }))
+      );
+    } catch (error) {
+      console.error("Failed to fetch suppliers:", error);
+    }
+  };
+  fetchSuppliers();
+}, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -107,15 +126,26 @@ function ItemForm({ mode }: ItemFormProps) {
         ...prev,
         expDate: matchedStock.expiry_date?.split("T")[0] || "",
         quantity: isAdd ? "" : matchedStock.item_qty.toString(),
-        unitPrice: matchedStock.unit_price?.toString() || "", //ADD: unit price field
+        unitPrice: matchedStock.unit_price?.toString() || "",
+        supplierId: matchedStock.supplier_id || "",
       }));
       setDisableExpDate(true);
       setDisableUnitPrice(true);
     } else {
-      setForm((prev) => ({ ...prev, expDate: "" , unitPrice: ""})); //ADD: unit price field
+      setForm((prev) => ({ 
+        ...prev, 
+        expDate: "" , 
+        unitPrice: "", 
+        supplierId: "",
+      }));
       setDisableExpDate(false);
       setDisableUnitPrice(false);
     }
+  };
+
+  const handleSupplierChange = (newValue: any) => {
+    const supplierId = newValue?.value || "";
+    setForm((prev) => ({ ...prev, supplierId }));
   };
 
   const resetForm = () => {
@@ -127,6 +157,7 @@ function ItemForm({ mode }: ItemFormProps) {
       newItem: "",
       newLotId: "",
       unitPrice: "",
+      supplierId: "",
     });
     setLotOptions([]);
     setDisableExpDate(false);
@@ -153,12 +184,14 @@ function ItemForm({ mode }: ItemFormProps) {
         if (isNewItem) {
           await inventoryApi.createItem({
             name: form.item,
+            supplierId: form.supplierId || undefined,
             initialStock: {
               userId: user.id,
               lotId: form.lotId,
               quantity: Number(form.quantity),
               expiryDate: form.expDate || undefined,
-              unitPrice: Number(form.unitPrice) || 0, // ADD: unit price field
+              unitPrice: Number(form.unitPrice) || 0,
+              supplierId: form.supplierId || undefined,
             },
           });
           setToast({ message: "New item and stock added.", type: "success" });
@@ -169,7 +202,8 @@ function ItemForm({ mode }: ItemFormProps) {
             quantity: Number(form.quantity),
             userId: user.id,
             expiryDate: form.expDate || undefined,
-            unitPrice: Number(form.unitPrice) || 0, // ADD: unit price field
+            unitPrice: Number(form.unitPrice) || 0,
+            supplierId: form.supplierId || undefined,
           });
           setToast({
             message: "New lot added to existing item.",
@@ -220,16 +254,17 @@ function ItemForm({ mode }: ItemFormProps) {
         const newLot = form.newLotId.trim();
         const newQty = Number(form.quantity);
         const newDate = form.expDate;
-        const newUnitPrice = Number(form.unitPrice); //ADD: unit price field
+        const newUnitPrice = Number(form.unitPrice);
+        const newSupplierId = form.supplierId;
 
         const itemNameChanged = newName && newName !== matchedItem.name;
         const lotIdChanged = newLot && newLot !== matchedStock.lot_id;
         const qtyChanged = !isNaN(newQty) && newQty !== matchedStock.item_qty;
         const dateChanged = newDate !== matchedStock.expiry_date?.split("T")[0];
-        const unitPriceChanged = newUnitPrice !== matchedStock.unit_price; //ADD: unit price field
+        const unitPriceChanged = newUnitPrice !== matchedStock.unit_price;
+        const supplierChanged = newSupplierId !== matchedStock.supplier_id;
 
-        //ADD: Unit price condition
-        if (!itemNameChanged && !lotIdChanged && !qtyChanged && !dateChanged && !unitPriceChanged) {
+        if (!itemNameChanged && !lotIdChanged && !qtyChanged && !dateChanged && !unitPriceChanged && !supplierChanged) {
           throw new Error("No changes detected.");
         }
 
@@ -244,7 +279,8 @@ function ItemForm({ mode }: ItemFormProps) {
               ? null // <-- send null, not undefined
               : newDate
             : undefined,
-          unitPrice: form.unitPrice ? Number(form.unitPrice) : undefined, //ADD: unit price field
+          unitPrice: form.unitPrice ? Number(form.unitPrice) : undefined,
+          supplierId: supplierChanged ? (newSupplierId || null) : undefined,
           userId: user.id,
         });
 
@@ -402,6 +438,26 @@ function ItemForm({ mode }: ItemFormProps) {
               min="0"
             />
 
+            <div className="w-full">
+              <label className="block text-xs font-bold font-Work-Sans text-black mb-1">
+                Supplier (Optional)
+              </label>
+              <Select
+                isClearable
+                name="supplier"
+                options={supplierOptions}
+                onChange={handleSupplierChange}
+                className="text-sm"
+                classNamePrefix="select"
+                placeholder="Select a supplier"
+                value={
+                  form.supplierId
+                    ? supplierOptions.find((opt) => opt.value === form.supplierId)
+                    : null
+                }
+              />
+            </div>
+
             <Input
               label="Expiration Date (Optional)"
               id="expDate"
@@ -545,6 +601,26 @@ function ItemForm({ mode }: ItemFormProps) {
             step="0.01"
             min="0"
           />
+
+          <div className="w-full">
+            <label className="block text-xs font-bold font-Work-Sans text-black mb-1">
+              Supplier (Optional)
+            </label>
+            <Select
+              isClearable
+              name="supplier"
+              options={supplierOptions}
+              onChange={handleSupplierChange}
+              className="text-sm"
+              classNamePrefix="select"
+              placeholder="Select a supplier"
+              value={
+                form.supplierId
+                  ? supplierOptions.find((opt) => opt.value === form.supplierId)
+                  : null
+              }
+            />
+          </div>
 
           <Input
             label="Expiration Date (Optional)"

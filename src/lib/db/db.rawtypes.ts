@@ -64,6 +64,7 @@ export type Database = {
           item_id: string
           item_qty: number
           lot_id: string
+          supplier_id: string | null
           unit_price: number | null //ADD: unit price field
           updated_at: string
         }
@@ -74,6 +75,7 @@ export type Database = {
           item_id: string
           item_qty: number
           lot_id: string
+          supplier_id?: string | null
           unit_price: number | null //ADD: unit price field
           updated_at?: string
         }
@@ -84,6 +86,7 @@ export type Database = {
           item_id?: string
           item_qty?: number
           lot_id?: string
+          supplier_id?: string | null
           unit_price: number | null //ADD: unit price field
           updated_at?: string
         }
@@ -93,6 +96,13 @@ export type Database = {
             columns: ["item_id"]
             isOneToOne: false
             referencedRelation: "items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "item_stocks_supplier_id_fkey"  // ADD THIS
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
             referencedColumns: ["id"]
           },
         ]
@@ -207,6 +217,36 @@ export type Database = {
           id?: string
           is_admin?: boolean
           name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      suppliers: {
+        Row: {
+          id: string
+          name: string
+          phone_number: string | null
+          email: string | null
+          remarks: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          phone_number?: string | null
+          email?: string | null
+          remarks?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          phone_number?: string | null
+          email?: string | null
+          remarks?: string | null
+          created_at?: string
           updated_at?: string
         }
         Relationships: []

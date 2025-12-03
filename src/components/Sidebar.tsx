@@ -2,6 +2,7 @@ import { NavLink } from "react-router-dom";
 import { Heading } from "./General/Heading";
 import logo from "../assets/Logo.png";
 import { useAuth } from "../lib/db/db.auth";
+import path from "path";
 
 export default function Sidebar({
   isOpen,
@@ -17,6 +18,7 @@ export default function Sidebar({
     { path: "/activity-log", text: "Activity Log" },
     { path: "/add-item", text: "Add Item" },
     { path: "/check-out", text: "Confirmation" },
+    { path: "/suppliers", text: "Suppliers" },
   ];
 
   const adminItems = [
@@ -24,6 +26,9 @@ export default function Sidebar({
     { path: "/edit-item", text: "Edit Item" },
     { path: "/delete-item", text: "Delete Item" },
     { path: "/generate-report", text: "Generate Report" },
+    { path: "/add-supplier", text: "Add Supplier" },
+    { path: "/edit-supplier", text: "Edit Supplier" },
+    { path: "/delete-supplier", text: "Delete Supplier" },
   ];
 
   return (
