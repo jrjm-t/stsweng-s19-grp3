@@ -104,6 +104,10 @@ const router = createBrowserRouter([
         element: <DeleteSupplier />,
       },
       {
+        path: "/accountprofile",
+        element: <AccountProfile />,
+      },
+      {
         path: "/member-requests",
         element: <MemberRequests />,
       },
