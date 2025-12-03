@@ -14,7 +14,6 @@ function Dashboard() {
   const [itemsAdded, setItemsAdded] = useState(0);
   const [itemsTaken, setItemsTaken] = useState(0);
   
-  // FIXME: 
   const [totalInventoryValue, setTotalInventoryValue] = useState(0);
   const [totalExpirationValue, setTotalExpirationValue] = useState(0);
 

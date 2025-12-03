@@ -3,7 +3,7 @@ import Button from "./General/Button";
 import menu from "../assets/hamburger.png";
 import { Heading } from "./General/Heading";
 import { useAuth } from "../lib/db/db.auth";
-import { Navigate } from "react-router-dom";
+import { Link, Navigate, NavLink } from "react-router-dom";
 import { useSearch } from "../contexts/SearchContext";
 
 interface HeaderProps {
@@ -33,15 +33,24 @@ function Header({ setSidebarOpen }: HeaderProps) {
           <Heading size="xs" className="text-border">
             Welcome Back!
           </Heading>
-          <Heading size="sm" className="text-black">
-            {user?.email?.split("@")[0]
-              .split(/[\s._-]+/)
-              .map(
-                (word) =>
-                  word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
-              )
-              .join(" ")}
-          </Heading>
+          <NavLink
+            to="/accountprofile"
+            className={({ isActive }) =>
+              `underline underline-offset-4 ${
+                isActive ? "text-secondary" : "text-black"
+              }`
+            }
+          >
+            <Heading size="sm">
+              {user?.email?.split("@")[0]
+                .split(/[\s._-]+/)
+                .map(
+                  (word) =>
+                    word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+                )
+                .join(" ")}
+            </Heading>
+          </NavLink>
         </div>
       </div>
 

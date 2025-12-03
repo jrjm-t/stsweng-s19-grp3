@@ -2,9 +2,10 @@ import { createClient, User } from "@supabase/supabase-js";
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 
 // Env setup
-const supabase = createClient(
+export const supabase = createClient(
   import.meta.env.VITE_SUPABASE_URL!,
-  import.meta.env.VITE_SUPABASE_ANON_KEY!
+  import.meta.env.VITE_SUPABASE_ANON_KEY!,
+  import.meta.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
 interface IAuth {
@@ -103,7 +104,7 @@ export const AuthContextProvider = ({
         .from("users")
         .select("name")
         .eq("name", username)
-        .single();
+        .maybeSingle();
 
       if (checkError) {
         if (checkError.code !== 'PGRST116') {
@@ -122,6 +123,8 @@ export const AuthContextProvider = ({
 
       // Just generate a placeholder email because supabase wants an email
       const email = `${username}@gabay.org`;
+
+      // @supabase/supabase-js@2.76.1 <- this authentication system used to run with this supabase dependency, recently updated to latest
 
       // Supabase automatically checks password
       const { data, error } = await supabase.auth.signUp({
